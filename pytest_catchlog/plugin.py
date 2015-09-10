@@ -12,6 +12,7 @@ from pytest_catchlog.common import catching_logs
 
 # Let the fixtures be discoverable by pytest.
 from pytest_catchlog.fixture import caplog, capturelog
+from pytest_catchlog.fixture import LogCaptureHandler
 
 
 DEFAULT_LOG_FORMAT = '%(filename)-25s %(lineno)4d %(levelname)-8s %(message)s'
@@ -85,11 +86,7 @@ class CatchLogPlugin(object):
         """Implements the internals of pytest_runtest_xxx() hook."""
         with catching_logs(LogCaptureHandler(),
                            formatter=self.formatter) as log_handler:
-            item.catch_log_handler = log_handler
-            try:
-                yield  # run test
-            finally:
-                del item.catch_log_handler
+            yield  # run test
 
             if self.print_logs:
                 # Add a captured log section to the report.
@@ -110,26 +107,3 @@ class CatchLogPlugin(object):
     def pytest_runtest_teardown(self, item):
         with self._runtest_for(item, 'teardown'):
             yield
-
-
-class LogCaptureHandler(logging.StreamHandler):
-    """A logging handler that stores log records and the log text."""
-
-    def __init__(self):
-        """Creates a new log handler."""
-
-        logging.StreamHandler.__init__(self)
-        self.stream = py.io.TextIO()
-        self.records = []
-
-    def close(self):
-        """Close this log handler and its underlying stream."""
-
-        logging.StreamHandler.close(self)
-        self.stream.close()
-
-    def emit(self, record):
-        """Keep the log records in a list in addition to the log text."""
-
-        self.records.append(record)
-        logging.StreamHandler.emit(self, record)
