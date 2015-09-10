@@ -126,11 +126,7 @@ class CatchLogPlugin(object):
         def runtest_func(self, item):
             """Implements pytest_runtest_xxx() hook."""
             with catching_logs(CatchLogHandler()) as log_handler:
-                item.catch_log_handler = log_handler
-                try:
-                    yield  # run test
-                finally:
-                    del item.catch_log_handler
+                yield  # run test
 
                 if self.print_logs:
                     # Add a captured log section to the report.
@@ -219,13 +215,11 @@ class CatchLogFuncArg(object):
         return logging_at_level(level, obj)
 
 
-def pytest_funcarg__caplog(request):
-    """Returns a funcarg to access and control log capturing."""
+@pytest.yield_fixture
+def caplog(request):
+    """Access and control log capturing and recording."""
+    with catching_logs(CatchLogHandler()) as handler:
+        yield CatchLogFuncArg(handler)
 
-    return CatchLogFuncArg(request._pyfuncitem.catch_log_handler)
 
-
-def pytest_funcarg__capturelog(request):
-    """Returns a funcarg to access and control log capturing."""
-
-    return CatchLogFuncArg(request._pyfuncitem.catch_log_handler)
+capturelog = caplog
