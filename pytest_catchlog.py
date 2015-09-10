@@ -192,27 +192,45 @@ class CatchLogFuncArg(object):
         """
         return [(r.name, r.levelno, r.getMessage()) for r in self.records()]
 
-    def set_level(self, level, logger=None):
-        """Sets the level for capturing of logs.
+    # Methods controlling a level of the internal log recorder of the funcarg.
 
-        By default, the level is set on the handler used to capture
-        logs. Specify a logger name to instead set the level of any
-        logger.
+    def set_level(self, level):
+        """Sets the level for recording of logs.
+
+        This only affects logs collected by this recorder. To control all
+        captured logs, including these reported for failed tests, use the
+        ``caplog.set_logging_level()`` method instead.
         """
+        self._handler.setLevel(level)
 
-        obj = logger and logging.getLogger(logger) or self._handler
-        obj.setLevel(level)
+    def at_level(self, level):
+        """Context manager that controls the level for recording of logs.
 
-    def at_level(self, level, logger=None):
-        """Context manager that sets the level for capturing of logs.
-
-        By default, the level is set on the handler used to capture
-        logs. Specify a logger name to instead set the level of any
-        logger.
+        This only affects logs collected by this recorder. To control all
+        captured logs, including these reported for failed tests, use the
+        ``caplog.logging_at_level()`` context manager instead.
         """
+        return logging_at_level(level, self._handler)  # duck typing: quack!
 
-        obj = logger and logging.getLogger(logger) or self._handler
-        return logging_at_level(level, obj)
+    # Helper methods controlling a level of the global logging.
+
+    @staticmethod
+    def set_logging_level(level, logger=None):
+        """Sets the level for the logging subsystem.
+
+        By default, the level is set on the root logger aggregating all logs.
+        Specify a logger or its name to instead set the level of any logger.
+        """
+        get_logger_obj(logger).setLevel(level)
+
+    @staticmethod
+    def logging_at_level(level, logger=None):
+        """Context manager that sets the level for the logging subsystem.
+
+        By default, the level is set on the root logger aggregating all logs.
+        Specify a logger or its name to instead set the level of any logger.
+        """
+        return logging_at_level(level, logger)
 
 
 @pytest.yield_fixture
