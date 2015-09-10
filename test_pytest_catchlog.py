@@ -100,17 +100,13 @@ def test_change_level(testdir):
             log.warning('logger WARNING level')
             log.critical('logger CRITICAL level')
 
-            assert False
+            assert 'DEBUG' not in caplog.text
+            assert 'INFO' in caplog.text
+            assert 'WARNING' not in caplog.text
+            assert 'CRITICAL' in caplog.text
         ''')
     result = testdir.runpytest()
-    assert result.ret == 1
-    result.stdout.fnmatch_lines(['*- Captured *log call -*',
-                                 '*handler INFO level*',
-                                 '*logger CRITICAL level*'])
-    py.test.raises(Exception, result.stdout.fnmatch_lines,
-                   ['*- Captured *log call -*', '*handler DEBUG level*'])
-    py.test.raises(Exception, result.stdout.fnmatch_lines,
-                   ['*- Captured *log call -*', '*logger WARNING level*'])
+    assert result.ret == 0
 
 
 @py.test.mark.skipif('sys.version_info < (2,5)')
@@ -131,17 +127,13 @@ def test_with_statement(testdir):
                     log.warning('logger WARNING level')
                     log.critical('logger CRITICAL level')
 
-            assert False
+            assert 'DEBUG' not in caplog.text
+            assert 'INFO' in caplog.text
+            assert 'WARNING' not in caplog.text
+            assert 'CRITICAL' in caplog.text
         ''')
     result = testdir.runpytest()
-    assert result.ret == 1
-    result.stdout.fnmatch_lines(['*- Captured *log call -*',
-                                 '*handler INFO level*',
-                                 '*logger CRITICAL level*'])
-    py.test.raises(Exception, result.stdout.fnmatch_lines,
-                   ['*- Captured *log call -*', '*handler DEBUG level*'])
-    py.test.raises(Exception, result.stdout.fnmatch_lines,
-                   ['*- Captured *log call -*', '*logger WARNING level*'])
+    assert result.ret == 0
 
 
 def test_log_access(testdir):

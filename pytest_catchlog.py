@@ -128,11 +128,7 @@ class CatchLogPlugin(object):
         """Implements the internals of pytest_runtest_xxx() hook."""
         with catching_logs(LogCaptureHandler(),
                            formatter=self.formatter) as log_handler:
-            item.catch_log_handler = log_handler
-            try:
-                yield  # run test
-            finally:
-                del item.catch_log_handler
+            yield  # run test
 
             if self.print_logs:
                 # Add a captured log section to the report.
@@ -181,13 +177,10 @@ class LogCaptureHandler(logging.StreamHandler):
 class LogCaptureFixture(object):
     """Provides access and control of log capturing."""
 
-    @property
-    def handler(self):
-        return self._item.catch_log_handler
-
-    def __init__(self, item):
+    def __init__(self, handler):
         """Creates a new funcarg."""
-        self._item = item
+        super(LogCaptureFixture, self).__init__()
+        self.handler = handler
 
     @property
     def text(self):
@@ -268,6 +261,11 @@ class CallableStr(CallablePropertyMixin, str):
 class CompatLogCaptureFixture(LogCaptureFixture):
     """Backward compatibility with pytest-capturelog."""
 
+    def __init__(self, handler, item):
+        """Creates a new funcarg."""
+        super(CompatLogCaptureFixture, self).__init__(handler)
+        self._item = item
+
     def _warn_compat(self, old, new):
         self._item.warn(code='L1',
                         message=("{0} is deprecated, use {1} instead"
@@ -296,7 +294,7 @@ class CompatLogCaptureFixture(LogCaptureFixture):
         return self.at_level(level, logger)
 
 
-@pytest.fixture
+@pytest.yield_fixture
 def caplog(request):
     """Access and control log capturing.
 
@@ -306,6 +304,7 @@ def caplog(request):
     * caplog.records()       -> list of logging.LogRecord instances
     * caplog.record_tuples() -> list of (logger_name, level, message) tuples
     """
-    return CompatLogCaptureFixture(request.node)
+    with catching_logs(LogCaptureHandler()) as handler:
+        yield CompatLogCaptureFixture(handler, item=request.node)
 
 capturelog = caplog
