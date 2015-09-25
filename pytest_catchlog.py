@@ -175,18 +175,16 @@ class CatchLogFuncArg(object):
 
     def __init__(self, handler):
         """Creates a new funcarg."""
-
-        self.handler = handler
+        self._handler = handler
 
     def text(self):
         """Returns the log text."""
 
-        return self.handler.stream.getvalue()
+        return self._handler.stream.getvalue()
 
     def records(self):
         """Returns the list of log records."""
-
-        return self.handler.records
+        return self._handler.records
 
     def record_tuples(self):
         """Returns a list of a striped down version of log records intended
@@ -206,7 +204,7 @@ class CatchLogFuncArg(object):
         logger.
         """
 
-        obj = logger and logging.getLogger(logger) or self.handler
+        obj = logger and logging.getLogger(logger) or self._handler
         obj.setLevel(level)
 
     def at_level(self, level, logger=None):
@@ -217,7 +215,7 @@ class CatchLogFuncArg(object):
         logger.
         """
 
-        obj = logger and logging.getLogger(logger) or self.handler
+        obj = logger and logging.getLogger(logger) or self._handler
         return logging_at_level(level, obj)
 
 
