@@ -125,12 +125,14 @@ class CatchLogPlugin(object):
         @pytest.mark.hookwrapper
         def runtest_func(self, item):
             """Implements pytest_runtest_xxx() hook."""
-            with catching_logs(CatchLogHandler()) as log_handler:
+            with closing(py.io.TextIO()) as stream, \
+                    catching_logs(logging.StreamHandler(stream),
+                                  formatter=self.formatter):
                 yield  # run test
 
                 if self.print_logs:
                     # Add a captured log section to the report.
-                    log = log_handler.stream.getvalue().strip()
+                    log = stream.getvalue().strip()
                     item.add_report_section(when, 'log', log)
 
         runtest_func.__name__ = 'pytest_runtest_' + when  # just in case
@@ -143,27 +145,24 @@ class CatchLogPlugin(object):
     del _make_runtest_for
 
 
-class CatchLogHandler(logging.StreamHandler):
-    """A logging handler that stores log records and the log text."""
+class RecordingHandler(logging.Handler):
+    """A logging handler that stores log records into a buffer."""
+
+    @property
+    def records(self):
+        """Returns the list of captured records in a thread-safe way."""
+        self.acquire()
+        try:
+            return list(self.buffer)
+        finally:
+            self.release()
 
     def __init__(self):
-        """Creates a new log handler."""
+        super(RecordingHandler, self).__init__()
+        self.buffer = []
 
-        logging.StreamHandler.__init__(self)
-        self.stream = py.io.TextIO()
-        self.records = []
-
-    def close(self):
-        """Close this log handler and its underlying stream."""
-
-        logging.StreamHandler.close(self)
-        self.stream.close()
-
-    def emit(self, record):
-        """Keep the log records in a list in addition to the log text."""
-
-        self.records.append(record)
-        logging.StreamHandler.emit(self, record)
+    def emit(self, record):  # Called with the lock acquired.
+        self.buffer.append(record)
 
 
 class CatchLogFuncArg(object):
@@ -172,11 +171,6 @@ class CatchLogFuncArg(object):
     def __init__(self, handler):
         """Creates a new funcarg."""
         self._handler = handler
-
-    def text(self):
-        """Returns the log text."""
-
-        return self._handler.stream.getvalue()
 
     def records(self):
         """Returns the list of log records."""
@@ -192,7 +186,15 @@ class CatchLogFuncArg(object):
         """
         return [(r.name, r.levelno, r.getMessage()) for r in self.records()]
 
-    # Methods controlling a level of the internal log recorder of the funcarg.
+    def text(self):
+        """Returns the log text."""
+        with closing(py.io.TextIO()) as stream:
+            stream_handler = logging.StreamHandler(stream)
+
+            for r in self.records():
+                stream_handler.handle(r)
+
+            return stream.getvalue()
 
     def set_level(self, level):
         """Sets the level for recording of logs.
@@ -236,7 +238,7 @@ class CatchLogFuncArg(object):
 @pytest.yield_fixture
 def caplog(request):
     """Access and control log capturing and recording."""
-    with catching_logs(CatchLogHandler()) as handler:
+    with catching_logs(RecordingHandler()) as handler:
         yield CatchLogFuncArg(handler)
 
 
