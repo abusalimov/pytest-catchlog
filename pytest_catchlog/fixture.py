@@ -13,27 +13,25 @@ from pytest_catchlog.common import catching_logs, logging_at_level
 BASIC_FORMATTER = logging.Formatter(logging.BASIC_FORMAT)
 
 
-class LogCaptureHandler(logging.StreamHandler):
+class RecordingHandler(logging.StreamHandler,
+                       object):  # Python 2.6: enforce new-style class
     """A logging handler that stores log records and the log text."""
 
     def __init__(self):
         """Creates a new log handler."""
-
-        logging.StreamHandler.__init__(self)
+        super(RecordingHandler, self).__init__()
         self.stream = py.io.TextIO()
         self.records = []
 
     def close(self):
         """Close this log handler and its underlying stream."""
-
-        logging.StreamHandler.close(self)
+        super(RecordingHandler, self).close()
         self.stream.close()
 
     def emit(self, record):
         """Keep the log records in a list in addition to the log text."""
-
+        super(RecordingHandler, self).emit(record)
         self.records.append(record)
-        logging.StreamHandler.emit(self, record)
 
 
 class LogCaptureFixture(object):
@@ -170,7 +168,7 @@ def caplog(request):
     * caplog.records()       -> list of logging.LogRecord instances
     * caplog.record_tuples() -> list of (logger_name, level, message) tuples
     """
-    with catching_logs(LogCaptureHandler(),
+    with catching_logs(RecordingHandler(),
                        formatter=BASIC_FORMATTER) as handler:
         yield CompatLogCaptureFixture(handler, item=request.node)
 
