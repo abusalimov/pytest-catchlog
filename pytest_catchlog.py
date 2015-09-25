@@ -126,13 +126,14 @@ class CatchLogPlugin(object):
     @contextmanager
     def _runtest_for(self, item, when):
         """Implements the internals of pytest_runtest_xxx() hook."""
-        with catching_logs(LogCaptureHandler(),
-                           formatter=self.formatter) as log_handler:
-            yield  # run test
+        with closing(py.io.TextIO()) as stream:
+            with catching_logs(logging.StreamHandler(stream),
+                               formatter=self.formatter):
+                yield  # run test
 
             if self.print_logs:
                 # Add a captured log section to the report.
-                log = log_handler.stream.getvalue().strip()
+                log = stream.getvalue().strip()
                 item.add_report_section(when, 'log', log)
 
     @pytest.mark.hookwrapper
@@ -151,27 +152,15 @@ class CatchLogPlugin(object):
             yield
 
 
-class LogCaptureHandler(logging.StreamHandler):
-    """A logging handler that stores log records and the log text."""
+class RecordingHandler(logging.Handler):
+    """A logging handler that stores log records into a buffer."""
 
     def __init__(self):
-        """Creates a new log handler."""
-
-        logging.StreamHandler.__init__(self)
-        self.stream = py.io.TextIO()
+        super(RecordingHandler, self).__init__()
         self.records = []
 
-    def close(self):
-        """Close this log handler and its underlying stream."""
-
-        logging.StreamHandler.close(self)
-        self.stream.close()
-
-    def emit(self, record):
-        """Keep the log records in a list in addition to the log text."""
-
+    def emit(self, record):  # Called with the lock acquired.
         self.records.append(record)
-        logging.StreamHandler.emit(self, record)
 
 
 class LogCaptureFixture(object):
@@ -181,11 +170,6 @@ class LogCaptureFixture(object):
         """Creates a new funcarg."""
         super(LogCaptureFixture, self).__init__()
         self.handler = handler
-
-    @property
-    def text(self):
-        """Returns the log text."""
-        return self.handler.stream.getvalue()
 
     @property
     def records(self):
@@ -202,6 +186,12 @@ class LogCaptureFixture(object):
             (logger_name, log_level, message)
         """
         return [(r.name, r.levelno, r.getMessage()) for r in self.records]
+
+    @property
+    def text(self):
+        """Returns the log text."""
+        record_fmt = logging.BASIC_FORMAT + '\n'  # always the standard format
+        return ''.join(record_fmt % r.__dict__ for r in self.records)
 
     def set_level(self, level, logger=None):
         """Sets the level for capturing of logs.
@@ -304,7 +294,7 @@ def caplog(request):
     * caplog.records()       -> list of logging.LogRecord instances
     * caplog.record_tuples() -> list of (logger_name, level, message) tuples
     """
-    with catching_logs(LogCaptureHandler()) as handler:
+    with catching_logs(RecordingHandler()) as handler:
         yield CompatLogCaptureFixture(handler, item=request.node)
 
 capturelog = caplog
