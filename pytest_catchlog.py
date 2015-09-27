@@ -165,11 +165,11 @@ class RecordingHandler(logging.Handler):
         self.buffer.append(record)
 
 
-class CatchLogFuncArg(object):
-    """Provides access and control of log capturing."""
+class CatchLogRec(object):
+    """Recorder objects capture and store logs for further inspection."""
 
     def __init__(self, handler):
-        """Creates a new funcarg."""
+        super(CatchLogRec, self).__init__()
         self._handler = handler
 
     def records(self):
@@ -213,6 +213,17 @@ class CatchLogFuncArg(object):
         ``caplog.logging_at_level()`` context manager instead.
         """
         return logging_at_level(level, self._handler)  # duck typing: quack!
+
+
+class CatchLogFuncArg(CatchLogRec):
+    """Provides access and control of log capturing."""
+
+    @staticmethod
+    @contextmanager
+    def recording(level=logging.NOTSET, logger=None):
+        with catching_logs(RecordingHandler(),
+                           level=level, logger=logger) as handler:
+            yield CatchLogRec(handler)
 
     # Helper methods controlling a level of the global logging.
 
