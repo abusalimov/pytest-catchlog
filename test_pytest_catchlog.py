@@ -56,12 +56,12 @@ def test_change_level(testdir):
         pytest_plugins = 'catchlog'
 
         def test_foo(caplog):
-            caplog.set_level(logging.INFO)
+            caplog.set_logging_level(logging.INFO)
             log = logging.getLogger()
             log.debug('handler DEBUG level')
             log.info('handler INFO level')
 
-            caplog.set_level(logging.CRITICAL, logger='root.baz')
+            caplog.set_logging_level(logging.CRITICAL, logger='root.baz')
             log = logging.getLogger('root.baz')
             log.warning('logger WARNING level')
             log.critical('logger CRITICAL level')
@@ -89,12 +89,13 @@ def test_with_statement(testdir):
         pytest_plugins = 'catchlog'
 
         def test_foo(caplog):
-            with caplog.at_level(logging.INFO):
+            with caplog.logging_at_level(logging.INFO):
                 log = logging.getLogger()
                 log.debug('handler DEBUG level')
                 log.info('handler INFO level')
 
-                with caplog.at_level(logging.CRITICAL, logger='root.baz'):
+                with caplog.logging_at_level(logging.CRITICAL,
+                                             logger='root.baz'):
                     log = logging.getLogger('root.baz')
                     log.warning('logger WARNING level')
                     log.critical('logger CRITICAL level')
