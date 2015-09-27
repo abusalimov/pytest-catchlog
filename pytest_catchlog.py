@@ -119,19 +119,32 @@ class CatchLogPlugin(object):
                 get_option_ini(config, 'log_format'),
                 get_option_ini(config, 'log_date_format'))
 
-    @pytest.mark.hookwrapper
-    def pytest_runtest_call(self, item):
-        with catching_logs(CatchLogHandler()) as log_handler:
-            item.catch_log_handler = log_handler
-            try:
-                yield  # run test
-            finally:
-                del item.catch_log_handler
+    def _make_runtest_for(when):
+        """Create a hook method for a given context (setup/call/teardown)."""
 
-            if self.print_logs:
-                # Add a captured log section to the report.
-                log = log_handler.stream.getvalue().strip()
-                item.add_report_section('call', 'log', log)
+        @pytest.mark.hookwrapper
+        def runtest_func(self, item):
+            """Implements pytest_runtest_xxx() hook."""
+            with catching_logs(CatchLogHandler()) as log_handler:
+                item.catch_log_handler = log_handler
+                try:
+                    yield  # run test
+                finally:
+                    del item.catch_log_handler
+
+                if self.print_logs:
+                    # Add a captured log section to the report.
+                    log = log_handler.stream.getvalue().strip()
+                    item.add_report_section(when, 'log', log)
+
+        runtest_func.__name__ = 'pytest_runtest_' + when  # just in case
+        return runtest_func
+
+    pytest_runtest_setup    = _make_runtest_for('setup')
+    pytest_runtest_call     = _make_runtest_for('call')
+    pytest_runtest_teardown = _make_runtest_for('teardown')
+
+    del _make_runtest_for
 
 
 class CatchLogHandler(logging.StreamHandler):
