@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 
 import functools
 import logging
+import sys
 from contextlib import closing, contextmanager
 
 import pytest
@@ -10,6 +11,30 @@ import py
 
 
 __version__ = '1.2.1'
+
+TERMINAL = py.io.TerminalWriter(sys.stderr)  # pylint: disable=no-member
+CONSOLEHANDLER = logging.StreamHandler(TERMINAL)
+# Add the handler to logging
+logging.root.addHandler(CONSOLEHANDLER)
+# The root logging should have the lowest logging level to allow all messages
+# to be "passed" to the handlers
+logging.root.setLevel(1)
+
+
+class Hooks(object):  # pylint: disable=too-few-public-methods
+    """
+    Class to add new hooks to pytest
+    """
+
+    @pytest.hookspec()
+    def pytest_register_logging_levels(self):
+        '''
+        This hook will allow a logging level, which is not part of the default
+        logging levels in the standard library to register itself with catchlog
+        in order to allow for proper verbosity(-v) to log level calculation.
+
+        Return either a logging level, or a list/tuple of logging levels
+        '''
 
 
 def get_logger_obj(logger=None):
@@ -76,6 +101,7 @@ def add_option_ini(parser, option, dest, default=None, help=None):
                   help='default value for ' + option)
     parser.getgroup('catchlog').addoption(option, dest=dest, help=help)
 
+
 def get_option_ini(config, name):
     ret = config.getoption(name)  # 'default' arg won't work as expected
     if ret is None:
@@ -92,12 +118,13 @@ def pytest_addoption(parser):
                     help='disable printing caught logs on failed tests.')
     add_option_ini(parser,
                    '--log-format',
-                   dest='log_format', default=('%(filename)-25s %(lineno)4d'
-                                               ' %(levelname)-8s %(message)s'),
+                   dest='log_format',
+                   default=CatchLogPlugin.DEFAULT_LOG_FORMAT,
                    help='log format as used by the logging module.')
     add_option_ini(parser,
                    '--log-date-format',
-                   dest='log_date_format', default=None,
+                   dest='log_date_format',
+                   default=CatchLogPlugin.DEFAULT_DATE_FORMAT,
                    help='log date format as used by the logging module.')
 
 
@@ -105,12 +132,73 @@ def pytest_configure(config):
     """Always register the log catcher plugin with py.test or tests can't
     find the  fixture function.
     """
+
+    # Get the format options and add the formatter to the console handler
+    formatter = logging.Formatter(get_option_ini(config, 'log_format'),
+                                  get_option_ini(config, 'log_date_format'))
+    CONSOLEHANDLER.setFormatter(formatter)
     config.pluginmanager.register(CatchLogPlugin(config), '_catch_log')
+
+
+def pytest_addhooks(pluginmanager):
+    """
+    Register our new hooks
+    """
+    pluginmanager.add_hookspecs(Hooks)
+
+
+def pytest_cmdline_main(config):
+    """
+    called for performing the main command line action. The default
+    implementation will invoke the configure hooks and runtest_mainloop.
+    """
+
+    # Prepare the HANDLED_LEVELS dictionary
+    log_levels = set(CatchLogPlugin.HANDLED_LEVELS.values())
+
+    # Add any log levels to HANDLED_LEVELS contributed by hook implementers
+    for levels in config.hook.pytest_register_logging_levels():
+        if not isinstance(levels, (list, tuple)):
+            levels = [levels]
+        log_levels.update(set(levels))
+
+    # Make sure we have from less verbose to more verbose log levels in
+    # HANDLED_LEVELS
+    sorted_log_levels = sorted(log_levels, reverse=True)
+    # Reset the handled levels dictionary
+    CatchLogPlugin.HANDLED_LEVELS = {}
+    # Store the levels from less verbose to more verbose
+    for idx, level in enumerate(sorted_log_levels):
+        CatchLogPlugin.HANDLED_LEVELS[idx + 2] = level
+
+    # Set the console verbosity level
+    verbosity = config.getoption('-v')
+    min_verbosity = 2  # -v  - WARN loggin level
+    max_verbosity = len(CatchLogPlugin.HANDLED_LEVELS) + 1
+    if verbosity > 1:
+        if verbosity in CatchLogPlugin.HANDLED_LEVELS:
+            log_level = CatchLogPlugin.HANDLED_LEVELS[verbosity]
+        elif verbosity >= max_verbosity:
+            log_level = CatchLogPlugin.HANDLED_LEVELS[max_verbosity]
+        else:
+            log_level = CatchLogPlugin.HANDLED_LEVELS[min_verbosity]
+        CONSOLEHANDLER.setLevel(log_level)
+    else:
+        # The console handler defaults to the highest logging level
+        CONSOLEHANDLER.setLevel(logging.FATAL)
 
 
 class CatchLogPlugin(object):
     """Attaches to the logging module and captures log messages for each test.
     """
+    DEFAULT_LOG_FORMAT = '%(filename)-25s %(lineno)4d %(levelname)-8s %(message)s'
+    DEFAULT_DATE_FORMAT = '%H:%M:%S'
+
+    HANDLED_LEVELS = {
+        2: logging.WARN,    # -v
+        3: logging.INFO,    # -vv
+        4: logging.DEBUG,   # -vvv
+    }
 
     def __init__(self, config):
         """Creates a new plugin to capture log messages.
@@ -260,8 +348,10 @@ class CallablePropertyMixin(object):
                           new="'caplog.{0}' property".format(self._prop_name))
         return self._naked_value  # to let legacy clients modify the object
 
+
 class CallableList(CallablePropertyMixin, list):
     pass
+
 
 class CallableStr(CallablePropertyMixin, str):
     pass

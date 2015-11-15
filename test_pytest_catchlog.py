@@ -1,3 +1,5 @@
+import os
+import textwrap
 import py
 
 pytest_plugins = 'pytester'
@@ -274,3 +276,166 @@ def test_disable_log_capturing(testdir):
                                  'text going to stderr'])
     py.test.raises(Exception, result.stdout.fnmatch_lines,
                    ['*- Captured *log call -*'])
+
+
+def test_logging_level_fatal(testdir):
+    testdir.makepyfile('''
+        import pytest
+        import logging
+
+        def test_logging_level():
+            from pytest_catchlog import CONSOLEHANDLER
+            assert CONSOLEHANDLER.level == logging.FATAL
+    ''')
+
+    result = testdir.runpytest('-v')
+
+    # fnmatch_lines does an assertion internally
+    result.stdout.fnmatch_lines([
+        '*::test_logging_level PASSED',
+    ])
+
+    # make sure that that we get a '0' exit code for the testsuite
+    assert result.ret == 0
+
+
+def test_logging_level_warn(testdir):
+    testdir.makepyfile('''
+        import pytest
+        import logging
+
+        def test_logging_level():
+            from pytest_catchlog import CONSOLEHANDLER
+            assert CONSOLEHANDLER.level == logging.WARN
+    ''')
+
+    result = testdir.runpytest('-vv')
+
+    # fnmatch_lines does an assertion internally
+    result.stdout.fnmatch_lines([
+        '*::test_logging_level PASSED',
+    ])
+
+    # make sure that that we get a '0' exit code for the testsuite
+    assert result.ret == 0
+
+
+def test_logging_level_info(testdir):
+    testdir.makepyfile('''
+        import pytest
+        import logging
+
+        def test_logging_level():
+            from pytest_catchlog import CONSOLEHANDLER
+            assert CONSOLEHANDLER.level == logging.INFO
+    ''')
+
+    result = testdir.runpytest('-vv', '-v')
+
+    # fnmatch_lines does an assertion internally
+    result.stdout.fnmatch_lines([
+        '*::test_logging_level PASSED',
+    ])
+
+    # make sure that that we get a '0' exit code for the testsuite
+    assert result.ret == 0
+
+
+def test_logging_level_debug(testdir):
+    testdir.makepyfile('''
+        import pytest
+        import logging
+
+        def test_logging_level():
+            from pytest_catchlog import CONSOLEHANDLER
+            assert CONSOLEHANDLER.level == logging.DEBUG
+    ''')
+
+    result = testdir.runpytest('-vv', '-vv')
+
+    # fnmatch_lines does an assertion internally
+    result.stdout.fnmatch_lines([
+        '*::test_logging_level PASSED',
+    ])
+
+    # make sure that that we get a '0' exit code for the testsuite
+    assert result.ret == 0
+
+
+def test_logging_level_trace(testdir):
+    with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
+        wfh.write(textwrap.dedent('''
+            import pytest
+            import logging
+
+            def pytest_register_logging_levels():
+                if not hasattr(logging, 'TRACE'):
+                    logging.TRACE = 5
+                    logging.addLevelName(logging.TRACE, 'TRACE')
+                return logging.TRACE
+        '''))
+    testdir.makepyfile('''
+        import pytest
+        import logging
+
+        if not hasattr(logging, 'TRACE'):
+            logging.TRACE = 5
+            logging.addLevelName(logging.TRACE, 'TRACE')
+
+        def test_logging_level():
+            from pytest_catchlog import CONSOLEHANDLER
+            assert CONSOLEHANDLER.level == logging.TRACE
+    ''')
+
+    result = testdir.runpytest('-vvvvv')
+
+    # fnmatch_lines does an assertion internally
+    result.stdout.fnmatch_lines([
+        '*::test_logging_level PASSED',
+    ])
+
+    # make sure that that we get a '0' exit code for the testsuite
+    assert result.ret == 0
+
+
+def test_logging_level_garbage(testdir):
+    with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
+        wfh.write(textwrap.dedent('''
+            import pytest
+            import logging
+
+            def pytest_register_logging_levels():
+                if not hasattr(logging, 'TRACE'):
+                    logging.TRACE = 5
+                    logging.addLevelName(logging.TRACE, 'TRACE')
+                if not hasattr(logging, 'GARBAGE'):
+                    logging.GARBAGE = 1
+                    logging.addLevelName(logging.GARBAGE, 'GARBAGE')
+                return (logging.TRACE, logging.GARBAGE)
+        '''))
+    testdir.makepyfile('''
+        import pytest
+        import logging
+
+        if not hasattr(logging, 'TRACE'):
+            logging.TRACE = 5
+            logging.addLevelName(logging.TRACE, 'TRACE')
+        if not hasattr(logging, 'GARBAGE'):
+            logging.GARBAGE = 1
+            logging.addLevelName(logging.GARBAGE, 'GARBAGE')
+
+        def test_logging_level():
+            from pytest_catchlog import CONSOLEHANDLER
+            assert CONSOLEHANDLER.level == logging.GARBAGE
+    ''')
+
+    for idx in range(6, 10):
+        result = testdir.runpytest('-' + 'v'*idx)
+
+        # fnmatch_lines does an assertion internally
+        result.stdout.fnmatch_lines([
+            '*::test_logging_level PASSED',
+        ])
+
+        # make sure that that we get a '0' exit code for the testsuite
+        assert result.ret == 0
