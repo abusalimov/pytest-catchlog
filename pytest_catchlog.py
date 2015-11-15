@@ -26,7 +26,6 @@ class Hooks(object):  # pylint: disable=too-few-public-methods
     Class to add new hooks to pytest
     """
 
-    @pytest.hookspec()
     def pytest_register_logging_levels(self):
         '''
         This hook will allow a logging level, which is not part of the default
