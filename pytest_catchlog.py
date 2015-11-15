@@ -143,7 +143,10 @@ def pytest_addhooks(pluginmanager):
     """
     Register our new hooks
     """
-    pluginmanager.add_hookspecs(Hooks)
+    method = getattr(pluginmanager, "add_hookspecs", None)
+    if method is None:
+        method = pluginmanager.addhooks
+    method(Hooks)
 
 
 def pytest_cmdline_main(config):
