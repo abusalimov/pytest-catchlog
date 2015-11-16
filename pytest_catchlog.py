@@ -12,14 +12,6 @@ import py
 
 __version__ = '1.2.1'
 
-TERMINAL = py.io.TerminalWriter(sys.stderr)  # pylint: disable=no-member
-CONSOLEHANDLER = logging.StreamHandler(TERMINAL)
-# Add the handler to logging
-logging.root.addHandler(CONSOLEHANDLER)
-# The root logging should have the lowest logging level to allow all messages
-# to be "passed" to the handlers
-logging.root.setLevel(1)
-
 
 def get_logger_obj(logger=None):
     """Get a logger object that can be specified by its name, or passed as is.
@@ -116,58 +108,7 @@ def pytest_configure(config):
     """Always register the log catcher plugin with py.test or tests can't
     find the  fixture function.
     """
-
-    # Get the format options and add the formatter to the console handler
-    formatter = logging.Formatter(get_option_ini(config, 'log_format'),
-                                  get_option_ini(config, 'log_date_format'))
-    CONSOLEHANDLER.setFormatter(formatter)
     config.pluginmanager.register(CatchLogPlugin(config), '_catch_log')
-
-
-def pytest_cmdline_main(config):
-    """
-    called for performing the main command line action. The default
-    implementation will invoke the configure hooks and runtest_mainloop.
-    """
-
-    # Prepare the handled_levels dictionary
-    log_levels = []
-    handled_levels = {}
-    if sys.version_info >= (3, 4):
-        available_levels = logging._levelToName.keys()
-    else:
-        available_levels = logging._levelNames.keys()
-    for level in available_levels:
-        if not isinstance(level, int):
-            continue
-        if level > logging.WARN:
-            continue
-        if level <= logging.NOTSET:
-            continue
-        if level in log_levels:
-            continue
-        log_levels.append(level)
-
-    log_levels = sorted(log_levels, reverse=True)
-
-    for idx, level in enumerate(log_levels):
-        handled_levels[idx + 2] = level
-
-    # Set the console verbosity level
-    verbosity = config.getoption('-v')
-    min_verbosity = 2  # -v  - WARN loggin level
-    max_verbosity = len(handled_levels) + 1
-    if verbosity > 1:
-        if verbosity in handled_levels:
-            log_level = handled_levels[verbosity]
-        elif verbosity >= max_verbosity:
-            log_level = handled_levels[max_verbosity]
-        else:
-            log_level = handled_levels[min_verbosity]
-        CONSOLEHANDLER.setLevel(log_level)
-    else:
-        # The console handler defaults to the highest logging level
-        CONSOLEHANDLER.setLevel(logging.FATAL)
 
 
 class CatchLogPlugin(object):
@@ -186,6 +127,15 @@ class CatchLogPlugin(object):
         self.formatter = logging.Formatter(
                 get_option_ini(config, 'log_format'),
                 get_option_ini(config, 'log_date_format'))
+        terminal = py.io.TerminalWriter(sys.stderr)  # pylint: disable=no-member
+        self.console = logging.StreamHandler(terminal)
+        self.console.setFormatter(self.formatter)
+        # Add the handler to logging
+        logging.root.addHandler(self.console)
+        # The root logging should have the lowest logging level to allow all
+        # messages to be "passed" to the handlers
+        logging.root.setLevel(1)
+        self.configure_console_handler(config.getoption('-v'))
 
     @contextmanager
     def _runtest_for(self, item, when):
@@ -217,6 +167,45 @@ class CatchLogPlugin(object):
     def pytest_runtest_teardown(self, item):
         with self._runtest_for(item, 'teardown'):
             yield
+
+    def configure_console_handler(self, verbosity):
+        # Prepare the handled_levels dictionary
+        log_levels = []
+        handled_levels = {}
+        if sys.version_info >= (3, 4):
+            available_levels = logging._levelToName.keys()
+        else:
+            available_levels = logging._levelNames.keys()
+        for level in available_levels:
+            if not isinstance(level, int):
+                continue
+            if level > logging.WARN:
+                continue
+            if level <= logging.NOTSET:
+                continue
+            if level in log_levels:
+                continue
+            log_levels.append(level)
+
+        log_levels = sorted(log_levels, reverse=True)
+
+        for idx, level in enumerate(log_levels):
+            handled_levels[idx + 2] = level
+
+        # Set the console verbosity level
+        min_verbosity = 2  # -v  - WARN loggin level
+        max_verbosity = len(handled_levels) + 1
+        if verbosity > 1:
+            if verbosity in handled_levels:
+                log_level = handled_levels[verbosity]
+            elif verbosity >= max_verbosity:
+                log_level = handled_levels[max_verbosity]
+            else:
+                log_level = handled_levels[min_verbosity]
+            self.console.setLevel(log_level)
+        else:
+            # The console handler defaults to the highest logging level
+            self.console.setLevel(logging.FATAL)
 
 
 class LogCaptureHandler(logging.StreamHandler):
