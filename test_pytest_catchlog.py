@@ -285,9 +285,9 @@ def test_logging_level_fatal(testdir):
         import pytest
         import logging
 
-        def test_logging_level():
-            from pytest_catchlog import CONSOLEHANDLER
-            assert CONSOLEHANDLER.level == logging.FATAL
+        def test_logging_level(request):
+            plugin = request.config.pluginmanager.getplugin('_catch_log')
+            assert plugin.console.level == logging.FATAL
     ''')
 
     result = testdir.runpytest('-v')
@@ -306,9 +306,9 @@ def test_logging_level_warn(testdir):
         import pytest
         import logging
 
-        def test_logging_level():
-            from pytest_catchlog import CONSOLEHANDLER
-            assert CONSOLEHANDLER.level == logging.WARN
+        def test_logging_level(request):
+            plugin = request.config.pluginmanager.getplugin('_catch_log')
+            assert plugin.console.level == logging.WARN
     ''')
 
     result = testdir.runpytest('-vv')
@@ -327,9 +327,9 @@ def test_logging_level_info(testdir):
         import pytest
         import logging
 
-        def test_logging_level():
-            from pytest_catchlog import CONSOLEHANDLER
-            assert CONSOLEHANDLER.level == logging.INFO
+        def test_logging_level(request):
+            plugin = request.config.pluginmanager.getplugin('_catch_log')
+            assert plugin.console.level == logging.INFO
     ''')
 
     result = testdir.runpytest('-vv', '-v')
@@ -348,9 +348,9 @@ def test_logging_level_debug(testdir):
         import pytest
         import logging
 
-        def test_logging_level():
-            from pytest_catchlog import CONSOLEHANDLER
-            assert CONSOLEHANDLER.level == logging.DEBUG
+        def test_logging_level(request):
+            plugin = request.config.pluginmanager.getplugin('_catch_log')
+            assert plugin.console.level == logging.DEBUG
     ''')
 
     result = testdir.runpytest('-vv', '-vv')
@@ -382,9 +382,9 @@ def test_logging_level_trace(testdir):
             logging.TRACE = 5
             logging.addLevelName(logging.TRACE, 'TRACE')
 
-        def test_logging_level():
-            from pytest_catchlog import CONSOLEHANDLER
-            assert CONSOLEHANDLER.level == logging.TRACE
+        def test_logging_level(request):
+            plugin = request.config.pluginmanager.getplugin('_catch_log')
+            assert plugin.console.level == logging.TRACE
     ''')
 
     result = testdir.runpytest('-vvvvv')
@@ -422,9 +422,9 @@ def test_logging_level_garbage(testdir):
             logging.GARBAGE = 1
             logging.addLevelName(logging.GARBAGE, 'GARBAGE')
 
-        def test_logging_level():
-            from pytest_catchlog import CONSOLEHANDLER
-            assert CONSOLEHANDLER.level == logging.GARBAGE
+        def test_logging_level(request):
+            plugin = request.config.pluginmanager.getplugin('_catch_log')
+            assert plugin.console.level == logging.GARBAGE
     ''')
 
     for idx in range(6, 10):
