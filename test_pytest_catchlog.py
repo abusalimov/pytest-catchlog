@@ -1,6 +1,8 @@
 import os
+import sys
 import textwrap
 import py
+import pytest
 
 pytest_plugins = 'pytester'
 
@@ -362,6 +364,7 @@ def test_logging_level_debug(testdir):
     assert result.ret == 0
 
 
+@pytest.mark.xfail('pypy' in sys.executable, reason='pypy does not pickup the custom log levels from conftest')
 def test_logging_level_trace(testdir):
     with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
         wfh.write(textwrap.dedent('''
@@ -395,6 +398,7 @@ def test_logging_level_trace(testdir):
     assert result.ret == 0
 
 
+@pytest.mark.xfail('pypy' in sys.executable, reason='pypy does not pickup the custom log levels from conftest')
 def test_logging_level_garbage(testdir):
     with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
         wfh.write(textwrap.dedent('''
