@@ -133,7 +133,11 @@ def pytest_cmdline_main(config):
     # Prepare the handled_levels dictionary
     log_levels = []
     handled_levels = {}
-    for level in logging._levelNames:
+    if sys.version_info >= (3, 4):
+        available_levels = logging._levelToName.keys()
+    else:
+        available_levels = logging._levelNames.keys()
+    for level in available_levels:
         if not isinstance(level, int):
             continue
         if level > logging.WARN:
