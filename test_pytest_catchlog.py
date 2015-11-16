@@ -365,22 +365,15 @@ def test_logging_level_debug(testdir):
 def test_logging_level_trace(testdir):
     with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
         wfh.write(textwrap.dedent('''
-            import pytest
             import logging
 
-            def pytest_register_logging_levels():
-                if not hasattr(logging, 'TRACE'):
-                    logging.TRACE = 5
-                    logging.addLevelName(logging.TRACE, 'TRACE')
-                return logging.TRACE
+            if not hasattr(logging, 'TRACE'):
+                logging.TRACE = 5
+                logging.addLevelName(logging.TRACE, 'TRACE')
         '''))
     testdir.makepyfile('''
         import pytest
         import logging
-
-        if not hasattr(logging, 'TRACE'):
-            logging.TRACE = 5
-            logging.addLevelName(logging.TRACE, 'TRACE')
 
         def test_logging_level():
             from pytest_catchlog import CONSOLEHANDLER
@@ -401,28 +394,18 @@ def test_logging_level_trace(testdir):
 def test_logging_level_garbage(testdir):
     with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
         wfh.write(textwrap.dedent('''
-            import pytest
             import logging
 
-            def pytest_register_logging_levels():
-                if not hasattr(logging, 'TRACE'):
-                    logging.TRACE = 5
-                    logging.addLevelName(logging.TRACE, 'TRACE')
-                if not hasattr(logging, 'GARBAGE'):
-                    logging.GARBAGE = 1
-                    logging.addLevelName(logging.GARBAGE, 'GARBAGE')
-                return (logging.TRACE, logging.GARBAGE)
+            if not hasattr(logging, 'TRACE'):
+                logging.TRACE = 5
+                logging.addLevelName(logging.TRACE, 'TRACE')
+            if not hasattr(logging, 'GARBAGE'):
+                logging.GARBAGE = 1
+                logging.addLevelName(logging.GARBAGE, 'GARBAGE')
         '''))
     testdir.makepyfile('''
         import pytest
         import logging
-
-        if not hasattr(logging, 'TRACE'):
-            logging.TRACE = 5
-            logging.addLevelName(logging.TRACE, 'TRACE')
-        if not hasattr(logging, 'GARBAGE'):
-            logging.GARBAGE = 1
-            logging.addLevelName(logging.GARBAGE, 'GARBAGE')
 
         def test_logging_level():
             from pytest_catchlog import CONSOLEHANDLER
