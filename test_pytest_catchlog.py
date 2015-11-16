@@ -375,6 +375,10 @@ def test_logging_level_trace(testdir):
         import pytest
         import logging
 
+        if not hasattr(logging, 'TRACE'):
+            logging.TRACE = 5
+            logging.addLevelName(logging.TRACE, 'TRACE')
+
         def test_logging_level():
             from pytest_catchlog import CONSOLEHANDLER
             assert CONSOLEHANDLER.level == logging.TRACE
@@ -406,6 +410,13 @@ def test_logging_level_garbage(testdir):
     testdir.makepyfile('''
         import pytest
         import logging
+
+        if not hasattr(logging, 'TRACE'):
+            logging.TRACE = 5
+            logging.addLevelName(logging.TRACE, 'TRACE')
+        if not hasattr(logging, 'GARBAGE'):
+            logging.GARBAGE = 1
+            logging.addLevelName(logging.GARBAGE, 'GARBAGE')
 
         def test_logging_level():
             from pytest_catchlog import CONSOLEHANDLER
