@@ -172,10 +172,13 @@ class CatchLogPlugin(object):
         # Prepare the handled_levels dictionary
         log_levels = []
         handled_levels = {}
-        if sys.version_info >= (3, 4):
-            available_levels = logging._levelToName.keys()
-        else:
+        try:
             available_levels = logging._levelNames.keys()
+        except AttributeError:
+            # Python >= 3.4
+            # And also PyPy3-2.4.0(Python 3.2) apparently...
+            # https://travis-ci.org/eisensheng/pytest-catchlog/jobs/91417631
+            available_levels = logging._levelToName.keys()
         for level in available_levels:
             if not isinstance(level, int):
                 continue
