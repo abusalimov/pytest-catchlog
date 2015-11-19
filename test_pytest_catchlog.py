@@ -223,6 +223,22 @@ def test_compat_properties(testdir):
     ''')
 
 
+def test_live_logs(testdir):
+    testdir.makepyfile('''
+        import sys
+        import logging
+
+        logger = logging.getLogger()
+
+        def test_foo(caplog):
+            logger.warning("I'm logging, I'm alive!")
+            sys.stderr.write('text going to stderr')
+        ''')
+    result = testdir.runpytest('-s')
+    result.stderr.fnmatch_lines(["*WARNING*I'm logging, I'm alive!*",
+                                 'text going to stderr'])
+
+
 def test_disable_log_capturing(testdir):
     testdir.makepyfile('''
         import sys
