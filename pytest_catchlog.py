@@ -118,12 +118,13 @@ class CatchLogPlugin(object):
         The formatter can be safely shared across all handlers so
         create a single one for the entire test session here.
         """
+        self.capture_logs = (config.getoption('capture', 'no') != 'no')
         self.print_logs = config.getoption('log_print')
         self.formatter = logging.Formatter(
                 get_option_ini(config, 'log_format'),
                 get_option_ini(config, 'log_date_format'))
 
-        handler = logging.StreamHandler()
+        handler = logging.StreamHandler()  # streams to stderr by default
         handler.setFormatter(self.formatter)
 
         self.handler = handler
@@ -137,6 +138,9 @@ class CatchLogPlugin(object):
     @contextmanager
     def _runtest_for(self, item, when):
         """Implements the internals of pytest_runtest_xxx() hook."""
+        if not self.capture_logs:
+            yield
+            return
         with closing(py.io.TextIO()) as stream:
             orig_stream = self.handler.stream
             self.handler.stream = stream
