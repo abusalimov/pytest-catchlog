@@ -123,13 +123,27 @@ class CatchLogPlugin(object):
                 get_option_ini(config, 'log_format'),
                 get_option_ini(config, 'log_date_format'))
 
+        handler = logging.StreamHandler()
+        handler.setFormatter(self.formatter)
+
+        self.handler = handler
+
+    @pytest.mark.hookwrapper
+    def pytest_runtestloop(self, session):
+        """Runs all collected test items."""
+        with catching_logs(self.handler):
+            yield  # run all the tests
+
     @contextmanager
     def _runtest_for(self, item, when):
         """Implements the internals of pytest_runtest_xxx() hook."""
         with closing(py.io.TextIO()) as stream:
-            with catching_logs(logging.StreamHandler(stream),
-                               formatter=self.formatter):
+            orig_stream = self.handler.stream
+            self.handler.stream = stream
+            try:
                 yield  # run test
+            finally:
+                self.handler.stream = orig_stream
 
             if self.print_logs:
                 # Add a captured log section to the report.
