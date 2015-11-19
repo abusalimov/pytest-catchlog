@@ -54,7 +54,7 @@ def logging_using_handler(handler, logger=None):
 
 @contextmanager
 def catching_logs(handler, filter=None, formatter=None,
-                  level=logging.NOTSET, logger=None):
+                  level=None, logger=None):
     """Context manager that prepares the whole logging machinery properly."""
     logger = get_logger_obj(logger)
 
@@ -62,7 +62,8 @@ def catching_logs(handler, filter=None, formatter=None,
         handler.addFilter(filter)
     if formatter is not None:
         handler.setFormatter(formatter)
-    handler.setLevel(level)
+    if level is not None:
+        handler.setLevel(level)
 
     with closing(handler):
         with logging_using_handler(handler, logger):
