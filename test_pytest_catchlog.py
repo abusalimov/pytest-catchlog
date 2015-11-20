@@ -6,7 +6,6 @@ pytest_plugins = 'pytester'
 def test_nothing_logged(testdir):
     testdir.makepyfile('''
         import sys
-        import logging
 
         def test_foo():
             sys.stdout.write('text going to stdout')
@@ -28,10 +27,12 @@ def test_messages_logged(testdir):
         import sys
         import logging
 
+        logger = logging.getLogger(__name__)
+
         def test_foo():
             sys.stdout.write('text going to stdout')
             sys.stderr.write('text going to stderr')
-            logging.getLogger().info('text going to logger')
+            logger.info('text going to logger')
             assert False
         ''')
     result = testdir.runpytest()
@@ -46,14 +47,15 @@ def test_messages_logged(testdir):
 
 def test_setup_logging(testdir):
     testdir.makepyfile('''
-        import sys
         import logging
 
+        logger = logging.getLogger(__name__)
+
         def setup_function(function):
-            logging.getLogger().info('text going to logger from setup')
+            logger.info('text going to logger from setup')
 
         def test_foo():
-            logging.getLogger().info('text going to logger from call')
+            logger.info('text going to logger from call')
             assert False
         ''')
     result = testdir.runpytest()
@@ -66,14 +68,15 @@ def test_setup_logging(testdir):
 
 def test_teardown_logging(testdir):
     testdir.makepyfile('''
-        import sys
         import logging
 
+        logger = logging.getLogger(__name__)
+
         def test_foo():
-            logging.getLogger().info('text going to logger from call')
+            logger.info('text going to logger from call')
 
         def teardown_function(function):
-            logging.getLogger().info('text going to logger from teardown')
+            logger.info('text going to logger from teardown')
             assert False
         ''')
     result = testdir.runpytest()
@@ -86,19 +89,19 @@ def test_teardown_logging(testdir):
 
 def test_change_level(testdir):
     testdir.makepyfile('''
-        import sys
         import logging
+
+        logger = logging.getLogger(__name__)
+        sublogger = logging.getLogger(__name__+'.baz')
 
         def test_foo(caplog):
             caplog.set_level(logging.INFO)
-            log = logging.getLogger()
-            log.debug('handler DEBUG level')
-            log.info('handler INFO level')
+            logger.debug('handler DEBUG level')
+            logger.info('handler INFO level')
 
-            caplog.set_level(logging.CRITICAL, logger='root.baz')
-            log = logging.getLogger('root.baz')
-            log.warning('logger WARNING level')
-            log.critical('logger CRITICAL level')
+            caplog.set_level(logging.CRITICAL, logger=sublogger.name)
+            sublogger.warning('logger WARNING level')
+            sublogger.critical('logger CRITICAL level')
 
             assert 'DEBUG' not in caplog.text
             assert 'INFO' in caplog.text
@@ -109,23 +112,21 @@ def test_change_level(testdir):
     assert result.ret == 0
 
 
-@pytest.mark.skipif('sys.version_info < (2,5)')
 def test_with_statement(testdir):
     testdir.makepyfile('''
-        from __future__ import with_statement
-        import sys
         import logging
+
+        logger = logging.getLogger(__name__)
+        sublogger = logging.getLogger(__name__+'.baz')
 
         def test_foo(caplog):
             with caplog.at_level(logging.INFO):
-                log = logging.getLogger()
-                log.debug('handler DEBUG level')
-                log.info('handler INFO level')
+                logger.debug('handler DEBUG level')
+                logger.info('handler INFO level')
 
-                with caplog.at_level(logging.CRITICAL, logger='root.baz'):
-                    log = logging.getLogger('root.baz')
-                    log.warning('logger WARNING level')
-                    log.critical('logger CRITICAL level')
+                with caplog.at_level(logging.CRITICAL, logger=sublogger.name):
+                    sublogger.warning('logger WARNING level')
+                    sublogger.critical('logger CRITICAL level')
 
             assert 'DEBUG' not in caplog.text
             assert 'INFO' in caplog.text
@@ -138,11 +139,12 @@ def test_with_statement(testdir):
 
 def test_log_access(testdir):
     testdir.makepyfile('''
-        import sys
         import logging
 
+        logger = logging.getLogger(__name__)
+
         def test_foo(caplog):
-            logging.getLogger().info('boo %s', 'arg')
+            logger.info('boo %s', 'arg')
             assert caplog.records[0].levelname == 'INFO'
             assert caplog.records[0].msg == 'boo %s'
             assert 'boo arg' in caplog.text
@@ -158,14 +160,15 @@ def test_funcarg_help(testdir):
 
 def test_record_tuples(testdir):
     testdir.makepyfile('''
-        import sys
         import logging
 
+        logger = logging.getLogger(__name__)
+
         def test_foo(caplog):
-            logging.getLogger().info('boo %s', 'arg')
+            logger.info('boo %s', 'arg')
 
             assert caplog.record_tuples == [
-                ('root', logging.INFO, 'boo arg'),
+                (__name__, logging.INFO, 'boo arg'),
             ]
         ''')
     result = testdir.runpytest()
@@ -176,12 +179,14 @@ def test_compat_camel_case_aliases(testdir):
     testdir.makepyfile('''
         import logging
 
+        logger = logging.getLogger(__name__)
+
         def test_foo(caplog):
             caplog.setLevel(logging.INFO)
-            logging.getLogger().debug('boo!')
+            logger.debug('boo!')
 
             with caplog.atLevel(logging.WARNING):
-                logging.getLogger().info('catch me if you can')
+                logger.info('catch me if you can')
         ''')
     result = testdir.runpytest()
     assert result.ret == 0
@@ -202,8 +207,10 @@ def test_compat_properties(testdir):
     testdir.makepyfile('''
         import logging
 
+        logger = logging.getLogger(__name__)
+
         def test_foo(caplog):
-            logging.getLogger().info('boo %s', 'arg')
+            logger.info('boo %s', 'arg')
 
             assert caplog.text    == caplog.text()    == str(caplog.text)
             assert caplog.records == caplog.records() == list(caplog.records)
@@ -244,9 +251,11 @@ def test_disable_log_capturing(testdir):
         import sys
         import logging
 
+        logger = logging.getLogger(__name__)
+
         def test_foo(caplog):
             sys.stdout.write('text going to stdout')
-            logging.getLogger().warning('catch me if you can!')
+            logger.warning('catch me if you can!')
             sys.stderr.write('text going to stderr')
             assert False
         ''')
