@@ -1,5 +1,5 @@
 import logging
-import py
+import pytest
 
 pytest_plugins = 'pytester'
 
@@ -20,8 +20,8 @@ def test_nothing_logged(testdir):
                                  'text going to stdout'])
     result.stdout.fnmatch_lines(['*- Captured stderr call -*',
                                  'text going to stderr'])
-    py.test.raises(Exception, result.stdout.fnmatch_lines,
-                   ['*- Captured *log call -*'])
+    with pytest.raises(pytest.fail.Exception):
+        result.stdout.fnmatch_lines(['*- Captured *log call -*'])
 
 
 def test_messages_logged(testdir):
@@ -114,7 +114,7 @@ def test_change_level(testdir):
                    ['*- Captured *log call -*', '*logger WARNING level*'])
 
 
-@py.test.mark.skipif('sys.version_info < (2,5)')
+@pytest.mark.skipif('sys.version_info < (2,5)')
 def test_with_statement(testdir):
     testdir.makepyfile('''
         from __future__ import with_statement
@@ -195,8 +195,8 @@ def test_compat_camel_case_aliases(testdir):
     result = testdir.runpytest()
     assert result.ret == 0
 
-    py.test.raises(Exception, result.stdout.fnmatch_lines,
-                   ['*- Captured *log call -*'])
+    with pytest.raises(pytest.fail.Exception):
+        result.stdout.fnmatch_lines(['*- Captured *log call -*'])
 
     result = testdir.runpytest('-rw')
     assert result.ret == 0
@@ -273,8 +273,8 @@ def test_disable_log_capturing(testdir):
                                  'text going to stdout'])
     result.stdout.fnmatch_lines(['*- Captured stderr call -*',
                                  'text going to stderr'])
-    py.test.raises(Exception, result.stdout.fnmatch_lines,
-                   ['*- Captured *log call -*'])
+    with pytest.raises(pytest.fail.Exception):
+        result.stdout.fnmatch_lines(['*- Captured *log call -*'])
 
 
 def test_logging_level_critical(testdir):
@@ -581,10 +581,11 @@ def test_out_of_range_log_level(testdir):
             pass
     ''')
 
-    result = testdir.runpytest('-v', '--log-level-extra={0}'.format(logging.CRITICAL+1))
+    result = testdir.runpytest('-v', '--log-level-extra={0}'
+                               .format(logging.CRITICAL+1))
     result.stderr.fnmatch_lines([
         "ERROR: '*' is ignored as not being in the valid logging levels "
-        "range: NOTSET({0}) - CRITICAL({1})".format(logging.NOTSET, logging.CRITICAL)
+        "range: NOTSET* - CRITICAL*"
     ])
 
     # make sure that that we get a '0' exit code for the testsuite
