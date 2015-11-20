@@ -152,7 +152,7 @@ class CatchLogPlugin(object):
             yield
 
 
-class RecordingHandler(logging.Handler):
+class RecordingHandler(logging.Handler, object):  # Python 2.6: new-style class
     """A logging handler that stores log records into a buffer."""
 
     def __init__(self):
