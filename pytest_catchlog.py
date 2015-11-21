@@ -134,7 +134,7 @@ class CatchLogPlugin(object):
         logging.root.addHandler(self.console)
         # The root logging should have the lowest logging level to allow all
         # messages to be "passed" to the handlers
-        logging.root.setLevel(1)
+        logging.root.setLevel(logging.NOTSET)
         self.configure_console_handler(config.getoption('-v'))
 
     @contextmanager
