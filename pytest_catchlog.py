@@ -181,17 +181,29 @@ class CatchLogPlugin(object):
             available_levels = logging._levelToName.keys()
         for level in available_levels:
             if not isinstance(level, int):
+                # This is the log level name, not the log level num
                 continue
             if level > logging.WARN:
+                # -v set's the console handler logging level to ERROR, higher
+                # log level messages, ie, >= FATAL are always shown
                 continue
             if level <= logging.NOTSET:
+                # Log levels lower than NOTSET, inclusive, we're not interested
                 continue
             if level in log_levels:
+                # We already know about this log level
                 continue
             log_levels.append(level)
 
+        # Reverse the list because we're interested on higher logging levels
+        # first
         log_levels = sorted(log_levels, reverse=True)
 
+        # Build a dictionary mapping of verbosity level to logging level
+        # -v    WARN
+        # -vv   INFO
+        # -vvv  DEBUG
+        # - ... etc
         for idx, level in enumerate(log_levels):
             handled_levels[idx + 2] = level
 
