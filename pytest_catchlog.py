@@ -72,10 +72,10 @@ def catching_logs(handler, filter=None, formatter=None,
                 yield handler
 
 
-def add_option_ini(parser, option, dest, default=None, help=None):
-    parser.addini(dest, default=default,
+def add_option_ini(parser, option, dest, type=None, action=None, default=None, help=None):
+    parser.addini(dest, default=default, type=type,
                   help='default value for ' + option)
-    parser.getgroup('catchlog').addoption(option, dest=dest, help=help)
+    parser.getgroup('catchlog').addoption(option, dest=dest, action=action, help=help)
 
 
 def get_option_ini(config, name):
@@ -102,6 +102,12 @@ def pytest_addoption(parser):
                    dest='log_date_format',
                    default=CatchLogPlugin.DEFAULT_DATE_FORMAT,
                    help='log date format as used by the logging module.')
+    add_option_ini(parser,
+                   '--log-extra-level',
+                   dest='log_extra_levels',
+                   type='args',
+                   action='append',
+                   help='extra logging levels that verbosity should be sensible to.')
 
 
 def pytest_configure(config):
@@ -123,6 +129,7 @@ class CatchLogPlugin(object):
         The formatter can be safely shared across all handlers so
         create a single one for the entire test session here.
         """
+        self.config = config
         self.print_logs = config.getoption('log_print')
         self.formatter = logging.Formatter(
                 get_option_ini(config, 'log_format'),
@@ -172,23 +179,36 @@ class CatchLogPlugin(object):
         # Prepare the handled_levels dictionary
         log_levels = []
         handled_levels = {}
-        try:
-            available_levels = logging._levelNames.keys()
-        except AttributeError:
-            # Python >= 3.4
-            # And also PyPy3-2.4.0(Python 3.2) apparently...
-            # https://travis-ci.org/eisensheng/pytest-catchlog/jobs/91417631
-            available_levels = logging._levelToName.keys()
+        available_levels = set([
+            #logging.CRITICAL,  # This will be the default console level if no -v is passed
+            logging.ERROR,
+            logging.WARNING,
+            logging.INFO,
+            logging.DEBUG,
+            logging.NOTSET
+        ])
+        for level in get_option_ini(self.config, 'log_extra_levels'):
+            try:
+                level_num = int(level)
+            except ValueError:
+                level_num = logging.getLevelName(level)
+                if not isinstance(level_num, int):
+                    # Python logging does not recognise this as a logging level
+                    raise pytest.UsageError(
+                        '\'{0}\' is not recognized as a logging level name. Please '
+                        'consider passing the logging level num instead.'.format(
+                            level
+                        )
+                    )
+            available_levels.add(level_num)
+
         for level in available_levels:
-            if not isinstance(level, int):
-                # This is the log level name, not the log level num
-                continue
             if level > logging.WARN:
                 # -v set's the console handler logging level to ERROR, higher
                 # log level messages, ie, >= FATAL are always shown
                 continue
-            if level <= logging.NOTSET:
-                # Log levels lower than NOTSET, inclusive, we're not interested
+            if level < logging.NOTSET:
+                # Log levels lower than NOTSET, we're not interested
                 continue
             if level in log_levels:
                 # We already know about this log level
