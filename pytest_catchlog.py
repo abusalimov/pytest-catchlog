@@ -190,17 +190,15 @@ class CatchLogPlugin(object):
         ])
         for level in get_option_ini(config, 'log_extra_levels'):
             try:
-                level_num = int(level)
+                level_num = int(getattr(logging, level, level))
             except ValueError:
-                level_num = logging.getLevelName(level)
-                if not isinstance(level_num, int):
-                    # Python logging does not recognise this as a logging level
-                    raise pytest.UsageError(
-                        '\'{0}\' is not recognized as a logging level name. Please '
-                        'consider passing the logging level num instead.'.format(
-                            level
-                        )
+                # Python logging does not recognise this as a logging level
+                raise pytest.UsageError(
+                    '\'{0}\' is not recognized as a logging level name. Please '
+                    'consider passing the logging level num instead.'.format(
+                        level
                     )
+                )
             available_levels.add(level_num)
 
         for level in available_levels:
