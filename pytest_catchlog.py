@@ -130,7 +130,6 @@ class CatchLogPlugin(object):
         The formatter can be safely shared across all handlers so
         create a single one for the entire test session here.
         """
-        self.config = config
         self.print_logs = config.getoption('log_print')
         self.formatter = logging.Formatter(
                 get_option_ini(config, 'log_format'),
@@ -143,7 +142,7 @@ class CatchLogPlugin(object):
         # The root logging should have the lowest logging level to allow all
         # messages to be "passed" to the handlers
         logging.root.setLevel(logging.NOTSET)
-        self.configure_console_handler(config.getoption('-v'))
+        self.configure_console_handler(config)
 
     @contextmanager
     def _runtest_for(self, item, when):
@@ -176,7 +175,8 @@ class CatchLogPlugin(object):
         with self._runtest_for(item, 'teardown'):
             yield
 
-    def configure_console_handler(self, verbosity):
+    def configure_console_handler(self, config):
+        verbosity = config.getoption('-v')
         # Prepare the handled_levels dictionary
         log_levels = []
         handled_levels = {}
@@ -188,7 +188,7 @@ class CatchLogPlugin(object):
             logging.DEBUG,
             logging.NOTSET
         ])
-        for level in get_option_ini(self.config, 'log_extra_levels'):
+        for level in get_option_ini(config, 'log_extra_levels'):
             try:
                 level_num = int(level)
             except ValueError:
