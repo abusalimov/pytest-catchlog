@@ -12,6 +12,9 @@ import py
 
 __version__ = '1.2.1'
 
+DEFAULT_LOG_FORMAT = '%(filename)-25s %(lineno)4d %(levelname)-8s %(message)s'
+DEFAULT_DATE_FORMAT = '%H:%M:%S'
+
 
 def get_logger_obj(logger=None):
     """Get a logger object that can be specified by its name, or passed as is.
@@ -95,12 +98,12 @@ def pytest_addoption(parser):
     add_option_ini(parser,
                    '--log-format',
                    dest='log_format',
-                   default=CatchLogPlugin.DEFAULT_LOG_FORMAT,
+                   default=DEFAULT_LOG_FORMAT,
                    help='log format as used by the logging module.')
     add_option_ini(parser,
                    '--log-date-format',
                    dest='log_date_format',
-                   default=CatchLogPlugin.DEFAULT_DATE_FORMAT,
+                   default=DEFAULT_DATE_FORMAT,
                    help='log date format as used by the logging module.')
     add_option_ini(parser,
                    '--log-extra-level',
@@ -120,8 +123,6 @@ def pytest_configure(config):
 class CatchLogPlugin(object):
     """Attaches to the logging module and captures log messages for each test.
     """
-    DEFAULT_LOG_FORMAT = '%(filename)-25s %(lineno)4d %(levelname)-8s %(message)s'
-    DEFAULT_DATE_FORMAT = '%H:%M:%S'
 
     def __init__(self, config):
         """Creates a new plugin to capture log messages.
