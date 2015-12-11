@@ -181,7 +181,7 @@ def pytest_configure(config):
         else:
             cli_handler_level = handled_levels[min_verbosity]
 
-    setattr(config, '_catch_log_cli_handler_level', cli_handler_level)
+    config._catch_log_cli_handler_level = cli_handler_level
     config.pluginmanager.register(CatchLogPlugin(config), '_catch_log')
 
 
