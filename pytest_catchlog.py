@@ -203,13 +203,9 @@ class CatchLogPlugin(object):
                 get_option_ini(config, 'log_date_format'))
         self.handler = logging.StreamHandler(sys.stderr)
         self.handler.setFormatter(self.formatter)
-        # Add the handler to logging
-        logging.root.addHandler(self.handler)
         # The root logging should have the lowest logging level to allow all
         # messages to be "passed" to the handlers
         logging.root.setLevel(logging.NOTSET)
-        # Set the level on the handler
-        self.handler.setLevel(config._catch_log_cli_handler_level)
 
     @contextmanager
     def _runtest_for(self, item, when):
@@ -241,6 +237,13 @@ class CatchLogPlugin(object):
     def pytest_runtest_teardown(self, item):
         with self._runtest_for(item, 'teardown'):
             yield
+
+    @pytest.mark.hookwrapper
+    def pytest_runtestloop(self, session):
+        """Runs all collected test items."""
+        with catching_logs(self.handler,
+                           level=session.config._catch_log_cli_handler_level):
+            yield  # run all the tests
 
 
 class LogCaptureHandler(logging.StreamHandler):
