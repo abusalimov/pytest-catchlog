@@ -193,11 +193,9 @@ class CatchLogPlugin(object):
             except ValueError:
                 # Python logging does not recognise this as a logging level
                 raise pytest.UsageError(
-                    '\'{0}\' is not recognized as a logging level name. Please '
-                    'consider passing the logging level num instead.'.format(
-                        level
-                    )
-                )
+                    "'{0}' is not recognized as a logging level name. Please "
+                    "consider passing the logging level num instead.".format(
+                        level))
             available_levels.add(level_num)
 
         for level in available_levels:
