@@ -1,8 +1,6 @@
 import os
-import sys
 import textwrap
 import py
-import pytest
 
 pytest_plugins = 'pytester'
 
@@ -417,6 +415,7 @@ def test_logging_level_trace_cli(testdir):
 
     # make sure that that we get a '0' exit code for the testsuite
     assert result.ret == 0
+
 
 def test_logging_level_garbage(testdir):
     with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
