@@ -203,9 +203,6 @@ class CatchLogPlugin(object):
                 get_option_ini(config, 'log_date_format'))
         self.handler = logging.StreamHandler(sys.stderr)
         self.handler.setFormatter(self.formatter)
-        # The root logging should have the lowest logging level to allow all
-        # messages to be "passed" to the handlers
-        logging.root.setLevel(logging.NOTSET)
 
     @contextmanager
     def _runtest_for(self, item, when):
