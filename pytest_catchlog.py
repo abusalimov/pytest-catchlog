@@ -227,10 +227,10 @@ class CatchLogPlugin(object):
         # verbosity=3   -vvv  INFO
         # verbosity=4   -vvvv DEBUG
         # - ... etc
-        for idx, level in enumerate(log_levels, start=2):
-            # Enumaration start at 2 because that's when we start adjusting the
-            # logging levels
-            handled_levels[idx] = level
+
+        # Enumaration start at 2 because that's when we start adjusting the
+        # logging levels
+        handled_levels = dict(enumerate(log_levels, start=2))
 
         # Set the console verbosity level
         min_verbosity = 2  # -vv  - WARNING logging level
