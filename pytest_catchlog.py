@@ -143,7 +143,7 @@ def pytest_configure(config):
             available_levels.add(level_num)
 
         for level in available_levels:
-            if level > logging.FATAL:
+            if level >= logging.FATAL:
                 # -v set's the console handler logging level to ERROR,
                 # higher log level messages, ie, >= FATAL are always shown
                 # because that's the default level set for the handler
