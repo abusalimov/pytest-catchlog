@@ -287,7 +287,7 @@ def test_logging_level_fatal(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.FATAL
+            assert plugin.handler.level == logging.FATAL
     ''')
 
     result = testdir.runpytest('-v')
@@ -308,7 +308,7 @@ def test_logging_level_warn(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.WARN
+            assert plugin.handler.level == logging.WARN
     ''')
 
     result = testdir.runpytest('-vv')
@@ -329,7 +329,7 @@ def test_logging_level_info(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.INFO
+            assert plugin.handler.level == logging.INFO
     ''')
 
     result = testdir.runpytest('-vv', '-v')
@@ -350,7 +350,7 @@ def test_logging_level_debug(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.DEBUG
+            assert plugin.handler.level == logging.DEBUG
     ''')
 
     result = testdir.runpytest('-vv', '-vv')
@@ -380,7 +380,7 @@ def test_logging_level_trace(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.TRACE
+            assert plugin.handler.level == logging.TRACE
     ''')
 
     result = testdir.runpytest('-vvvvv')
@@ -405,7 +405,7 @@ def test_logging_level_trace_cli(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.TRACE
+            assert plugin.handler.level == logging.TRACE
     ''')
 
     result = testdir.runpytest('-vvvvv', '--log-extra-level=5')
@@ -435,7 +435,7 @@ def test_logging_level_garbage(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.GARBAGE
+            assert plugin.handler.level == logging.GARBAGE
     ''')
 
     result = testdir.runpytest('-vvvvvv')
@@ -460,7 +460,7 @@ def test_logging_level_garbage_cli(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.GARBAGE
+            assert plugin.handler.level == logging.GARBAGE
     ''')
 
     result = testdir.runpytest('-vvvvvv',
@@ -496,7 +496,7 @@ def test_logging_level_not_set(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.NOTSET
+            assert plugin.handler.level == logging.NOTSET
     ''')
 
     for idx in range(7, 10):
@@ -525,7 +525,7 @@ def test_logging_level_not_set_cli(testdir):
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.console.level == logging.NOTSET
+            assert plugin.handler.level == logging.NOTSET
     ''')
 
     for idx in range(7, 10):
