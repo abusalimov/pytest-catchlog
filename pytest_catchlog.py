@@ -117,65 +117,10 @@ def pytest_configure(config):
     """Always register the log catcher plugin with py.test or tests can't
     find the  fixture function.
     """
-    config.pluginmanager.register(CatchLogPlugin(config), '_catch_log')
-
-
-class CatchLogPlugin(object):
-    """Attaches to the logging module and captures log messages for each test.
-    """
-
-    def __init__(self, config):
-        """Creates a new plugin to capture log messages.
-
-        The formatter can be safely shared across all handlers so
-        create a single one for the entire test session here.
-        """
-        self.print_logs = config.getoption('log_print')
-        self.formatter = logging.Formatter(
-                get_option_ini(config, 'log_format'),
-                get_option_ini(config, 'log_date_format'))
-        self.handler = logging.StreamHandler(sys.stderr)
-        self.handler.setFormatter(self.formatter)
-        # Add the handler to logging
-        logging.root.addHandler(self.handler)
-        # The root logging should have the lowest logging level to allow all
-        # messages to be "passed" to the handlers
-        logging.root.setLevel(logging.NOTSET)
-        self.configure_console_handler(config)
-
-    @contextmanager
-    def _runtest_for(self, item, when):
-        """Implements the internals of pytest_runtest_xxx() hook."""
-        with catching_logs(LogCaptureHandler(),
-                           formatter=self.formatter) as log_handler:
-            item.catch_log_handler = log_handler
-            try:
-                yield  # run test
-            finally:
-                del item.catch_log_handler
-
-            if self.print_logs:
-                # Add a captured log section to the report.
-                log = log_handler.stream.getvalue().strip()
-                item.add_report_section(when, 'log', log)
-
-    @pytest.mark.hookwrapper
-    def pytest_runtest_setup(self, item):
-        with self._runtest_for(item, 'setup'):
-            yield
-
-    @pytest.mark.hookwrapper
-    def pytest_runtest_call(self, item):
-        with self._runtest_for(item, 'call'):
-            yield
-
-    @pytest.mark.hookwrapper
-    def pytest_runtest_teardown(self, item):
-        with self._runtest_for(item, 'teardown'):
-            yield
-
-    def configure_console_handler(self, config):
-        verbosity = config.getoption('-v')
+    verbosity = config.getoption('-v')
+    if verbosity <= 1:
+        cli_handler_level = logging.FATAL
+    elif verbosity > 1:
         # Prepare the handled_levels dictionary
         log_levels = []
         available_levels = set([
@@ -223,25 +168,79 @@ class CatchLogPlugin(object):
         # verbosity=3   -vvv  WARNING
         # verbosity=4   -vvvv INFO
         # - ... etc
-        # Enumaration start at 2 because that's when we start adjusting the
-        # logging levels
         handled_levels = dict(
+            # Enumaration starts at 1 because that's when we start adjusting
+            # the logging levels
             enumerate(sorted(log_levels, reverse=True), start=1))
 
         # Set the console verbosity level
         min_verbosity = min(handled_levels)
         max_verbosity = max(handled_levels)
-        if verbosity > 1:
-            if verbosity in handled_levels:
-                log_level = handled_levels[verbosity]
-            elif verbosity >= max_verbosity:
-                log_level = handled_levels[max_verbosity]
-            else:
-                log_level = handled_levels[min_verbosity]
-            self.handler.setLevel(log_level)
+        if verbosity in handled_levels:
+            cli_handler_level = handled_levels[verbosity]
+        elif verbosity >= max_verbosity:
+            cli_handler_level = handled_levels[max_verbosity]
         else:
-            # The console handler defaults to the highest logging level
-            self.handler.setLevel(logging.FATAL)
+            cli_handler_level = handled_levels[min_verbosity]
+
+    setattr(config, '_catch_log_cli_handler_level', cli_handler_level)
+    config.pluginmanager.register(CatchLogPlugin(config), '_catch_log')
+
+
+class CatchLogPlugin(object):
+    """Attaches to the logging module and captures log messages for each test.
+    """
+
+    def __init__(self, config):
+        """Creates a new plugin to capture log messages.
+
+        The formatter can be safely shared across all handlers so
+        create a single one for the entire test session here.
+        """
+        self.print_logs = config.getoption('log_print')
+        self.formatter = logging.Formatter(
+                get_option_ini(config, 'log_format'),
+                get_option_ini(config, 'log_date_format'))
+        self.handler = logging.StreamHandler(sys.stderr)
+        self.handler.setFormatter(self.formatter)
+        # Add the handler to logging
+        logging.root.addHandler(self.handler)
+        # The root logging should have the lowest logging level to allow all
+        # messages to be "passed" to the handlers
+        logging.root.setLevel(logging.NOTSET)
+        # Set the level on the handler
+        self.handler.setLevel(config._catch_log_cli_handler_level)
+
+    @contextmanager
+    def _runtest_for(self, item, when):
+        """Implements the internals of pytest_runtest_xxx() hook."""
+        with catching_logs(LogCaptureHandler(),
+                           formatter=self.formatter) as log_handler:
+            item.catch_log_handler = log_handler
+            try:
+                yield  # run test
+            finally:
+                del item.catch_log_handler
+
+            if self.print_logs:
+                # Add a captured log section to the report.
+                log = log_handler.stream.getvalue().strip()
+                item.add_report_section(when, 'log', log)
+
+    @pytest.mark.hookwrapper
+    def pytest_runtest_setup(self, item):
+        with self._runtest_for(item, 'setup'):
+            yield
+
+    @pytest.mark.hookwrapper
+    def pytest_runtest_call(self, item):
+        with self._runtest_for(item, 'call'):
+            yield
+
+    @pytest.mark.hookwrapper
+    def pytest_runtest_teardown(self, item):
+        with self._runtest_for(item, 'teardown'):
+            yield
 
 
 class LogCaptureHandler(logging.StreamHandler):
