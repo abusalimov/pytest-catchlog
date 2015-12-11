@@ -301,27 +301,6 @@ def test_logging_level_fatal(testdir):
     assert result.ret == 0
 
 
-def test_logging_level_critical(testdir):
-    testdir.makepyfile('''
-        import pytest
-        import logging
-
-        def test_logging_level(request):
-            plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.handler.level == logging.CRITICAL
-    ''')
-
-    result = testdir.runpytest('-v')
-
-    # fnmatch_lines does an assertion internally
-    result.stdout.fnmatch_lines([
-        '*::test_logging_level PASSED',
-    ])
-
-    # make sure that that we get a '0' exit code for the testsuite
-    assert result.ret == 0
-
-
 def test_logging_level_error(testdir):
     testdir.makepyfile('''
         import pytest
@@ -332,7 +311,7 @@ def test_logging_level_error(testdir):
             assert plugin.handler.level == logging.ERROR
     ''')
 
-    result = testdir.runpytest('-vv')
+    result = testdir.runpytest('-v')
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
@@ -353,7 +332,7 @@ def test_logging_level_warning(testdir):
             assert plugin.handler.level == logging.WARNING
     ''')
 
-    result = testdir.runpytest('-vvv')
+    result = testdir.runpytest('-vv')
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
@@ -374,7 +353,7 @@ def test_logging_level_info(testdir):
             assert plugin.handler.level == logging.INFO
     ''')
 
-    result = testdir.runpytest('-vv', '-vv')
+    result = testdir.runpytest('-vv', '-v')
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
@@ -395,7 +374,7 @@ def test_logging_level_debug(testdir):
             assert plugin.handler.level == logging.DEBUG
     ''')
 
-    result = testdir.runpytest('-vv', '-vvv')
+    result = testdir.runpytest('-vv', '-vv')
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
@@ -425,7 +404,7 @@ def test_logging_level_trace(testdir):
             assert plugin.handler.level == logging.TRACE
     ''')
 
-    result = testdir.runpytest('-vvvvvv')
+    result = testdir.runpytest('-vvvvv')
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
@@ -450,7 +429,7 @@ def test_logging_level_trace_cli(testdir):
             assert plugin.handler.level == logging.TRACE
     ''')
 
-    result = testdir.runpytest('-vvvvvv', '--log-extra-level=5')
+    result = testdir.runpytest('-vvvvv', '--log-extra-level=5')
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
@@ -481,7 +460,7 @@ def test_logging_level_garbage(testdir):
             assert plugin.handler.level == logging.GARBAGE
     ''')
 
-    result = testdir.runpytest('-vvvvvvv')
+    result = testdir.runpytest('-vvvvvv')
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
@@ -506,7 +485,7 @@ def test_logging_level_garbage_cli(testdir):
             assert plugin.handler.level == logging.GARBAGE
     ''')
 
-    result = testdir.runpytest('-vvvvvvv',
+    result = testdir.runpytest('-vvvvvv',
                                '--log-extra-level=5',
                                '--log-extra-level=1')
 
@@ -542,7 +521,7 @@ def test_logging_level_not_set(testdir):
             assert plugin.handler.level == logging.NOTSET
     ''')
 
-    for idx in range(8, 11):
+    for idx in range(7, 10):
         result = testdir.runpytest('-' + 'v'*idx)
 
         # fnmatch_lines does an assertion internally

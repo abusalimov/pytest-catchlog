@@ -118,14 +118,13 @@ def pytest_configure(config):
     find the  fixture function.
     """
     verbosity = config.getoption('-v')
-    if verbosity <= 1:
+    if verbosity < 1:
         cli_handler_level = logging.FATAL
-    elif verbosity > 1:
+    elif verbosity >= 1:
         # Prepare the handled_levels dictionary
         log_levels = []
         available_levels = set([
             #logging.FATAL,  # This will be the default console level if no -v is passed
-            logging.CRITICAL,
             logging.ERROR,
             logging.WARNING,
             logging.INFO,
@@ -144,8 +143,8 @@ def pytest_configure(config):
             available_levels.add(level_num)
 
         for level in available_levels:
-            if level > logging.CRITICAL:
-                # -v set's the console handler logging level to CRITICAL,
+            if level > logging.FATAL:
+                # -v set's the console handler logging level to ERROR,
                 # higher log level messages, ie, >= FATAL are always shown
                 # because that's the default level set for the handler
                 continue
@@ -160,13 +159,12 @@ def pytest_configure(config):
         # Build a dictionary mapping of verbosity level to logging level
         # verbosity=0         FATAL    (no pytest output is shown and FATAL
         #                               log messages are displayd)
-        # verbosity=1   -v    CRITICAL (pytest verbosity kicks in, but only
+        # verbosity=1   -v    ERROR    (pytest verbosity kicks in, but only
         #                               log messages with higher or equal
-        #                               level to CRITICAL are shown)
-        # verbosity=2   -vv   ERROR    (start showing log messages with a
-        #                               higher or equal level to ERROR)
-        # verbosity=3   -vvv  WARNING
-        # verbosity=4   -vvvv INFO
+        #                               level to ERROR are shown)
+        # verbosity=2   -vv   WARNING  (start showing log messages with a
+        #                               higher or equal level to WARNING)
+        # verbosity=4   -vvv INFO
         # - ... etc
         handled_levels = dict(
             # Enumaration starts at 1 because that's when we start adjusting
