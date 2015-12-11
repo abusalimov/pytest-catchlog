@@ -134,11 +134,10 @@ class CatchLogPlugin(object):
         self.formatter = logging.Formatter(
                 get_option_ini(config, 'log_format'),
                 get_option_ini(config, 'log_date_format'))
-        terminal = py.io.TerminalWriter(sys.stderr)  # pylint: disable=no-member
-        self.console = logging.StreamHandler(terminal)
-        self.console.setFormatter(self.formatter)
+        self.handler = logging.StreamHandler(sys.stderr)
+        self.handler.setFormatter(self.formatter)
         # Add the handler to logging
-        logging.root.addHandler(self.console)
+        logging.root.addHandler(self.handler)
         # The root logging should have the lowest logging level to allow all
         # messages to be "passed" to the handlers
         logging.root.setLevel(logging.NOTSET)
@@ -236,10 +235,10 @@ class CatchLogPlugin(object):
                 log_level = handled_levels[max_verbosity]
             else:
                 log_level = handled_levels[min_verbosity]
-            self.console.setLevel(log_level)
+            self.handler.setLevel(log_level)
         else:
             # The console handler defaults to the highest logging level
-            self.console.setLevel(logging.FATAL)
+            self.handler.setLevel(logging.FATAL)
 
 
 class LogCaptureHandler(logging.StreamHandler):
