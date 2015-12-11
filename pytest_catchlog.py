@@ -199,9 +199,10 @@ class CatchLogPlugin(object):
             available_levels.add(level_num)
 
         for level in available_levels:
-            if level > logging.WARN:
+            if level > logging.WARNING:
                 # -v set's the console handler logging level to ERROR, higher
-                # log level messages, ie, >= FATAL are always shown
+                # log level messages, ie, >= FATAL are always shown because
+                # that's the default level set for the handler
                 continue
             if level < logging.NOTSET:
                 # Log levels lower than NOTSET, we're not interested
@@ -216,16 +217,24 @@ class CatchLogPlugin(object):
         log_levels = sorted(log_levels, reverse=True)
 
         # Build a dictionary mapping of verbosity level to logging level
-        # -v    WARN
-        # -vv   INFO
-        # -vvv  DEBUG
+        # verbosity=0         FATAL   (no pytest output is shown and fatal
+        #                              log messages are displayd)
+        # verbosity=1   -v    FATAL   (pytest verbosity kicks in, but still
+        #                              only log messages with higher or
+        #                              equal level to FATAL are shown)
+        # verbosity=2   -vv   WARNING (start showing log messages with a higher
+        #                              or equal level to WARNING)
+        # verbosity=3   -vvv  INFO
+        # verbosity=4   -vvvv DEBUG
         # - ... etc
-        for idx, level in enumerate(log_levels):
-            handled_levels[idx + 2] = level
+        for idx, level in enumerate(log_levels, start=2):
+            # Enumaration start at 2 because that's when we start adjusting the
+            # logging levels
+            handled_levels[idx] = level
 
         # Set the console verbosity level
-        min_verbosity = 2  # -v  - WARN loggin level
-        max_verbosity = len(handled_levels) + 1
+        min_verbosity = 2  # -vv  - WARNING logging level
+        max_verbosity = max(handled_levels)
         if verbosity > 1:
             if verbosity in handled_levels:
                 log_level = handled_levels[verbosity]
