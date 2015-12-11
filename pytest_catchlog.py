@@ -178,9 +178,9 @@ class CatchLogPlugin(object):
         verbosity = config.getoption('-v')
         # Prepare the handled_levels dictionary
         log_levels = []
-        handled_levels = {}
         available_levels = set([
-            #logging.CRITICAL,  # This will be the default console level if no -v is passed
+            #logging.FATAL,  # This will be the default console level if no -v is passed
+            logging.CRITICAL,
             logging.ERROR,
             logging.WARNING,
             logging.INFO,
@@ -199,10 +199,10 @@ class CatchLogPlugin(object):
             available_levels.add(level_num)
 
         for level in available_levels:
-            if level > logging.WARNING:
-                # -v set's the console handler logging level to ERROR, higher
-                # log level messages, ie, >= FATAL are always shown because
-                # that's the default level set for the handler
+            if level > logging.CRITICAL:
+                # -v set's the console handler logging level to CRITICAL,
+                # higher log level messages, ie, >= FATAL are always shown
+                # because that's the default level set for the handler
                 continue
             if level < logging.NOTSET:
                 # Log levels lower than NOTSET, we're not interested
@@ -212,28 +212,24 @@ class CatchLogPlugin(object):
                 continue
             log_levels.append(level)
 
-        # Reverse the list because we're interested on higher logging levels
-        # first
-        log_levels = sorted(log_levels, reverse=True)
-
         # Build a dictionary mapping of verbosity level to logging level
-        # verbosity=0         FATAL   (no pytest output is shown and fatal
-        #                              log messages are displayd)
-        # verbosity=1   -v    FATAL   (pytest verbosity kicks in, but still
-        #                              only log messages with higher or
-        #                              equal level to FATAL are shown)
-        # verbosity=2   -vv   WARNING (start showing log messages with a higher
-        #                              or equal level to WARNING)
-        # verbosity=3   -vvv  INFO
-        # verbosity=4   -vvvv DEBUG
+        # verbosity=0         FATAL    (no pytest output is shown and FATAL
+        #                               log messages are displayd)
+        # verbosity=1   -v    CRITICAL (pytest verbosity kicks in, but only
+        #                               log messages with higher or equal
+        #                               level to CRITICAL are shown)
+        # verbosity=2   -vv   ERROR    (start showing log messages with a
+        #                               higher or equal level to ERROR)
+        # verbosity=3   -vvv  WARNING
+        # verbosity=4   -vvvv INFO
         # - ... etc
-
         # Enumaration start at 2 because that's when we start adjusting the
         # logging levels
-        handled_levels = dict(enumerate(log_levels, start=2))
+        handled_levels = dict(
+            enumerate(sorted(log_levels, reverse=True), start=1))
 
         # Set the console verbosity level
-        min_verbosity = 2  # -vv  - WARNING logging level
+        min_verbosity = min(handled_levels)
         max_verbosity = max(handled_levels)
         if verbosity > 1:
             if verbosity in handled_levels:
