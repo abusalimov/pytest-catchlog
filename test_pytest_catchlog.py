@@ -1,3 +1,4 @@
+import logging
 import os
 import textwrap
 import py
@@ -573,6 +574,22 @@ def test_unknown_log_level_name(testdir):
     result = testdir.runpytest('-vvvvvv', '--log-extra-level=NOTSETS')
     result.stderr.fnmatch_lines([
         "*ERROR: 'NOTSETS' is not recognized as a logging level name.*",
+    ])
+
+    # make sure that that we get a '0' exit code for the testsuite
+    assert result.ret != 0
+
+
+def test_out_of_range_log_level(testdir):
+    testdir.makepyfile('''
+        def test_out_of_range_log_level():
+            pass
+    ''')
+
+    result = testdir.runpytest('-v', '--log-extra-level={0}'.format(logging.CRITICAL+1))
+    result.stderr.fnmatch_lines([
+        "ERROR: '*' is ignored as not being in the valid logging levels "
+        "range: NOTSET({0}) - CRITICAL({1})".format(logging.NOTSET, logging.CRITICAL)
     ])
 
     # make sure that that we get a '0' exit code for the testsuite

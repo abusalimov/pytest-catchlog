@@ -137,9 +137,12 @@ def pytest_configure(config):
                     level))
         else:
             if not (logging.NOTSET <= level_num <= logging.CRITICAL):
-                config.warn(
-                    "'{0}' is ignored as not being in the valid range".format(
-                        level))
+                raise pytest.UsageError(
+                    "'{0}' is ignored as not being in the valid logging "
+                    "levels range: NOTSET({1}) - CRITICAL({2})".format(
+                        level,
+                        logging.NOTSET,
+                        logging.CRITICAL))
                 continue
 
         available_levels.add(level_num)
