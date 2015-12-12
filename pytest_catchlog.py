@@ -143,7 +143,6 @@ def pytest_configure(config):
                         level,
                         logging.NOTSET,
                         logging.CRITICAL))
-                continue
 
         available_levels.add(level_num)
 
