@@ -278,14 +278,14 @@ def test_disable_log_capturing(testdir):
                    ['*- Captured *log call -*'])
 
 
-def test_logging_level_fatal(testdir):
+def test_logging_level_critical(testdir):
     testdir.makepyfile('''
         import pytest
         import logging
 
         def test_logging_level(request):
             plugin = request.config.pluginmanager.getplugin('_catch_log')
-            assert plugin.handler.level == logging.FATAL
+            assert plugin.handler.level == logging.CRITICAL
             print('PASSED')
 
     ''')
@@ -294,7 +294,7 @@ def test_logging_level_fatal(testdir):
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
-        'test_logging_level_fatal.py PASSED',
+        'test_logging_level_critical.py PASSED',
     ])
 
     # make sure that that we get a '0' exit code for the testsuite
