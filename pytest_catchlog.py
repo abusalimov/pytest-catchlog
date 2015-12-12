@@ -117,9 +117,7 @@ def pytest_configure(config):
     """Always register the log catcher plugin with py.test or tests can't
     find the  fixture function.
     """
-    verbosity = config.getoption('-v')
-    # Prepare the handled_levels dictionary
-    log_levels = []
+    # Prepare the available levels dictionary
     available_levels = set([
         logging.CRITICAL,
         logging.ERROR,
@@ -137,18 +135,17 @@ def pytest_configure(config):
                 "'{0}' is not recognized as a logging level name. Please "
                 "consider passing the logging level num instead.".format(
                     level))
+        else:
+            if not (logging.NOTSET <= level_num <= logging.CRITICAL):
+                config.warn(
+                    "'{0}' is ignored as not being in the valid range".format(
+                        level))
+                continue
+
         available_levels.add(level_num)
 
-    for level in available_levels:
-        if level < logging.NOTSET:
-            # Log levels lower than NOTSET, we're not interested
-            continue
-        if level in log_levels:
-            # We already know about this log level
-            continue
-        log_levels.append(level)
-
-    # Build a dictionary mapping of verbosity level to logging level
+    # Build a dictionary mapping of verbosity level to logging level, as
+    # follows, unless there's custom levels added
     # verbosity=0         CRITICAL (no pytest output is shown and CRITICAL
     #                               log messages are displayd)
     # verbosity=1   -v    ERROR    (pytest verbosity kicks in, but only
@@ -156,11 +153,12 @@ def pytest_configure(config):
     #                               level to ERROR are shown)
     # verbosity=2   -vv   WARNING  (start showing log messages with a
     #                               higher or equal level to WARNING)
-    # verbosity=4   -vvv INFO
+    # verbosity=4   -vvv  INFO
     # - ... etc
-    handled_levels = dict(enumerate(sorted(log_levels, reverse=True)))
+    handled_levels = dict(enumerate(sorted(available_levels, reverse=True)))
 
     # Set the console verbosity level
+    verbosity = config.getoption('-v')
     min_verbosity = min(handled_levels)
     max_verbosity = max(handled_levels)
     if verbosity in handled_levels:
