@@ -118,68 +118,57 @@ def pytest_configure(config):
     find the  fixture function.
     """
     verbosity = config.getoption('-v')
-    if verbosity < 1:
-        cli_handler_level = logging.CRITICAL
-    elif verbosity >= 1:
-        # Prepare the handled_levels dictionary
-        log_levels = []
-        available_levels = set([
-            #logging.CRITICAL,  # This will be the default console level if no -v is passed
-            logging.ERROR,
-            logging.WARNING,
-            logging.INFO,
-            logging.DEBUG,
-            logging.NOTSET
-        ])
-        for level in get_option_ini(config, 'log_extra_levels'):
-            try:
-                level_num = int(getattr(logging, level, level))
-            except ValueError:
-                # Python logging does not recognise this as a logging level
-                raise pytest.UsageError(
-                    "'{0}' is not recognized as a logging level name. Please "
-                    "consider passing the logging level num instead.".format(
-                        level))
-            available_levels.add(level_num)
+    # Prepare the handled_levels dictionary
+    log_levels = []
+    available_levels = set([
+        logging.CRITICAL,
+        logging.ERROR,
+        logging.WARNING,
+        logging.INFO,
+        logging.DEBUG,
+        logging.NOTSET
+    ])
+    for level in get_option_ini(config, 'log_extra_levels'):
+        try:
+            level_num = int(getattr(logging, level, level))
+        except ValueError:
+            # Python logging does not recognise this as a logging level
+            raise pytest.UsageError(
+                "'{0}' is not recognized as a logging level name. Please "
+                "consider passing the logging level num instead.".format(
+                    level))
+        available_levels.add(level_num)
 
-        for level in available_levels:
-            if level >= logging.CRITICAL:
-                # -v set's the console handler logging level to ERROR,
-                # higher log level messages, ie, >= CRITICAL are always shown
-                # because that's the default level set for the handler
-                continue
-            if level < logging.NOTSET:
-                # Log levels lower than NOTSET, we're not interested
-                continue
-            if level in log_levels:
-                # We already know about this log level
-                continue
-            log_levels.append(level)
+    for level in available_levels:
+        if level < logging.NOTSET:
+            # Log levels lower than NOTSET, we're not interested
+            continue
+        if level in log_levels:
+            # We already know about this log level
+            continue
+        log_levels.append(level)
 
-        # Build a dictionary mapping of verbosity level to logging level
-        # verbosity=0         CRITICAL (no pytest output is shown and CRITICAL
-        #                               log messages are displayd)
-        # verbosity=1   -v    ERROR    (pytest verbosity kicks in, but only
-        #                               log messages with higher or equal
-        #                               level to ERROR are shown)
-        # verbosity=2   -vv   WARNING  (start showing log messages with a
-        #                               higher or equal level to WARNING)
-        # verbosity=4   -vvv INFO
-        # - ... etc
-        handled_levels = dict(
-            # Enumaration starts at 1 because that's when we start adjusting
-            # the logging levels
-            enumerate(sorted(log_levels, reverse=True), start=1))
+    # Build a dictionary mapping of verbosity level to logging level
+    # verbosity=0         CRITICAL (no pytest output is shown and CRITICAL
+    #                               log messages are displayd)
+    # verbosity=1   -v    ERROR    (pytest verbosity kicks in, but only
+    #                               log messages with higher or equal
+    #                               level to ERROR are shown)
+    # verbosity=2   -vv   WARNING  (start showing log messages with a
+    #                               higher or equal level to WARNING)
+    # verbosity=4   -vvv INFO
+    # - ... etc
+    handled_levels = dict(enumerate(sorted(log_levels, reverse=True)))
 
-        # Set the console verbosity level
-        min_verbosity = min(handled_levels)
-        max_verbosity = max(handled_levels)
-        if verbosity in handled_levels:
-            cli_handler_level = handled_levels[verbosity]
-        elif verbosity >= max_verbosity:
-            cli_handler_level = handled_levels[max_verbosity]
-        else:
-            cli_handler_level = handled_levels[min_verbosity]
+    # Set the console verbosity level
+    min_verbosity = min(handled_levels)
+    max_verbosity = max(handled_levels)
+    if verbosity in handled_levels:
+        cli_handler_level = handled_levels[verbosity]
+    elif verbosity >= max_verbosity:
+        cli_handler_level = handled_levels[max_verbosity]
+    else:
+        cli_handler_level = handled_levels[min_verbosity]
 
     config._catch_log_cli_handler_level = cli_handler_level
     config.pluginmanager.register(CatchLogPlugin(config), '_catch_log')
