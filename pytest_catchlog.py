@@ -106,8 +106,8 @@ def pytest_addoption(parser):
                    default=DEFAULT_DATE_FORMAT,
                    help='log date format as used by the logging module.')
     add_option_ini(parser,
-                   '--log-extra-level',
-                   dest='log_extra_levels',
+                   '--log-level-extra',
+                   dest='log_level_extra',
                    type='args',
                    action='append',
                    help='extra logging levels that verbosity should be sensible to.')
@@ -126,7 +126,7 @@ def pytest_configure(config):
         logging.DEBUG,
         logging.NOTSET
     ])
-    for level in get_option_ini(config, 'log_extra_levels'):
+    for level in get_option_ini(config, 'log_level_extra'):
         try:
             level_num = int(getattr(logging, level, level))
         except ValueError:

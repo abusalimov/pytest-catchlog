@@ -390,7 +390,7 @@ def test_logging_level_trace(testdir):
     with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
         wfh.write(textwrap.dedent('''
             def pytest_configure(config):
-                config.addinivalue_line('log_extra_levels', '5')
+                config.addinivalue_line('log_level_extra', '5')
         '''))
     testdir.makepyfile('''
         import pytest
@@ -430,7 +430,7 @@ def test_logging_level_trace_cli(testdir):
             assert plugin.handler.level == logging.TRACE
     ''')
 
-    result = testdir.runpytest('-vvvvv', '--log-extra-level=5')
+    result = testdir.runpytest('-vvvvv', '--log-level-extra=5')
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
@@ -445,8 +445,8 @@ def test_logging_level_garbage(testdir):
     with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
         wfh.write(textwrap.dedent('''
             def pytest_configure(config):
-                config.addinivalue_line('log_extra_levels', '5')
-                config.addinivalue_line('log_extra_levels', '1')
+                config.addinivalue_line('log_level_extra', '5')
+                config.addinivalue_line('log_level_extra', '1')
         '''))
     testdir.makepyfile('''
         import pytest
@@ -487,8 +487,8 @@ def test_logging_level_garbage_cli(testdir):
     ''')
 
     result = testdir.runpytest('-vvvvvv',
-                               '--log-extra-level=5',
-                               '--log-extra-level=1')
+                               '--log-level-extra=5',
+                               '--log-level-extra=1')
 
     # fnmatch_lines does an assertion internally
     result.stdout.fnmatch_lines([
@@ -503,8 +503,8 @@ def test_logging_level_not_set(testdir):
     with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
         wfh.write(textwrap.dedent('''
             def pytest_configure(config):
-                config.addinivalue_line('log_extra_levels', '5')
-                config.addinivalue_line('log_extra_levels', '1')
+                config.addinivalue_line('log_level_extra', '5')
+                config.addinivalue_line('log_level_extra', '1')
         '''))
     testdir.makepyfile('''
         import pytest
@@ -553,8 +553,8 @@ def test_logging_level_not_set_cli(testdir):
 
     for idx in range(8, 11):
         result = testdir.runpytest('-' + 'v'*idx,
-                                   '--log-extra-level=5',
-                                   '--log-extra-level=1')
+                                   '--log-level-extra=5',
+                                   '--log-level-extra=1')
 
         # fnmatch_lines does an assertion internally
         result.stdout.fnmatch_lines([
@@ -571,7 +571,7 @@ def test_unknown_log_level_name(testdir):
             pass
     ''')
 
-    result = testdir.runpytest('-vvvvvv', '--log-extra-level=NOTSETS')
+    result = testdir.runpytest('-vvvvvv', '--log-level-extra=NOTSETS')
     result.stderr.fnmatch_lines([
         "*ERROR: 'NOTSETS' is not recognized as a logging level name.*",
     ])
@@ -586,7 +586,7 @@ def test_out_of_range_log_level(testdir):
             pass
     ''')
 
-    result = testdir.runpytest('-v', '--log-extra-level={0}'.format(logging.CRITICAL+1))
+    result = testdir.runpytest('-v', '--log-level-extra={0}'.format(logging.CRITICAL+1))
     result.stderr.fnmatch_lines([
         "ERROR: '*' is ignored as not being in the valid logging levels "
         "range: NOTSET({0}) - CRITICAL({1})".format(logging.NOTSET, logging.CRITICAL)
