@@ -1,6 +1,4 @@
 import logging
-import os
-import textwrap
 import py
 
 pytest_plugins = 'pytester'
@@ -387,11 +385,10 @@ def test_logging_level_debug(testdir):
 
 
 def test_logging_level_trace(testdir):
-    with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
-        wfh.write(textwrap.dedent('''
-            def pytest_configure(config):
-                config.addinivalue_line('log_level_extra', '5')
-        '''))
+    testdir.makeconftest('''
+        def pytest_configure(config):
+            config.addinivalue_line('log_level_extra', '5')
+    ''')
     testdir.makepyfile('''
         import pytest
         import logging
@@ -442,12 +439,11 @@ def test_logging_level_trace_cli(testdir):
 
 
 def test_logging_level_garbage(testdir):
-    with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
-        wfh.write(textwrap.dedent('''
-            def pytest_configure(config):
-                config.addinivalue_line('log_level_extra', '5')
-                config.addinivalue_line('log_level_extra', '1')
-        '''))
+    testdir.makeconftest('''
+        def pytest_configure(config):
+            config.addinivalue_line('log_level_extra', '5')
+            config.addinivalue_line('log_level_extra', '1')
+    ''')
     testdir.makepyfile('''
         import pytest
         import logging
@@ -500,12 +496,11 @@ def test_logging_level_garbage_cli(testdir):
 
 
 def test_logging_level_not_set(testdir):
-    with open(os.path.join(testdir.tmpdir.strpath, 'conftest.py'), 'w') as wfh:
-        wfh.write(textwrap.dedent('''
-            def pytest_configure(config):
-                config.addinivalue_line('log_level_extra', '5')
-                config.addinivalue_line('log_level_extra', '1')
-        '''))
+    testdir.makeconftest('''
+        def pytest_configure(config):
+            config.addinivalue_line('log_level_extra', '5')
+            config.addinivalue_line('log_level_extra', '1')
+    ''')
     testdir.makepyfile('''
         import pytest
         import logging
