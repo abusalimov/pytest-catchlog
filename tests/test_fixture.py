@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import logging
+from fnmatch import fnmatch
 
 import pytest
 
@@ -65,3 +66,21 @@ def test_unicode(caplog):
     assert caplog.records[0].levelname == 'INFO'
     assert caplog.records[0].msg == u('bū')
     assert u('bū') in caplog.text
+
+
+def test_mutable_arg(caplog):
+    mutable = {}
+    logger.info("Mutable dict %r empty", mutable)
+    mutable['foo'] = 'bar'
+    logger.info("Mutable dict %r bar", mutable)
+    mutable['foo'] = 'baz'
+    logger.info("Mutable dict %r baz", mutable)
+
+    assert caplog.record_tuples == [
+        (__name__, logging.INFO, "Mutable dict {} empty"),
+        (__name__, logging.INFO, "Mutable dict {'foo': 'bar'} bar"),
+        (__name__, logging.INFO, "Mutable dict {'foo': 'baz'} baz"),
+    ]
+    assert fnmatch(caplog.text, ("*Mutable dict {} empty\n"
+                                 "*Mutable dict {'foo': 'bar'} bar\n"
+                                 "*Mutable dict {'foo': 'baz'} baz\n"))

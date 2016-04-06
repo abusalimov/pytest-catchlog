@@ -61,7 +61,7 @@ class LogCaptureFixture(object):
 
             (logger_name, log_level, message)
         """
-        return [(r.name, r.levelno, r.getMessage()) for r in self.records]
+        return [(r.name, r.levelno, r.message) for r in self.records]
 
     def set_level(self, level, logger=None):
         """Sets the level for capturing of logs.

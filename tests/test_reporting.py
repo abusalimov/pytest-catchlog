@@ -138,3 +138,26 @@ def test_disable_log_capturing_ini(testdir):
                                  'text going to stderr'])
     with pytest.raises(pytest.fail.Exception):
         result.stdout.fnmatch_lines(['*- Captured *log call -*'])
+
+
+def test_mutable_arg(testdir):
+    testdir.makepyfile('''
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        def test_it():
+            mutable = {}
+            logger.info("Mutable dict %r empty", mutable)
+            mutable['foo'] = 'bar'
+            logger.info("Mutable dict %r bar", mutable)
+            mutable['foo'] = 'baz'
+            logger.info("Mutable dict %r baz", mutable)
+            assert False
+        ''')
+    result = testdir.runpytest()
+    assert result.ret == 1
+    result.stdout.fnmatch_lines(['*- Captured *log call -*',
+                                 "*Mutable dict {} empty",
+                                 "*Mutable dict {'foo': 'bar'} bar",
+                                 "*Mutable dict {'foo': 'baz'} baz"])
